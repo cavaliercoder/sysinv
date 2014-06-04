@@ -19,6 +19,3 @@
 #include <SetupAPI.h>
 #include <devguid.h>
 #include <regstr.h>
-
-#pragma comment(lib, "ClusAPI.lib")
-#include <ClusApi.h>

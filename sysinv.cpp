@@ -1,5 +1,3 @@
-// Test CPP.cpp : Defines the entry point for the console application.
-//
 #include "stdafx.h"
 #include "sysinv.h"
 #include "argparser.h"
@@ -78,6 +76,10 @@ int main(int argc, CHAR* argv[])
 
 	// Get OS info
 	node = GetOperatingSystemNode();
+	node_append_child(software, node);
+
+	// Get Software packages
+	node = GetPackagesNode();
 	node_append_child(software, node);
 
 	// Get CPU info

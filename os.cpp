@@ -118,7 +118,7 @@ PNODE GetOperatingSystemNode()
 
 	else if (VER_SUITE_PERSONAL & osinfo.wSuiteMask)
 		node_att_set(node, L"Edition", L"Home", 0);
-
+	
 	// OS Version numbers
 	swprintf(strBuffer, L"%u.%u.%u", osinfo.dwMajorVersion, osinfo.dwMinorVersion, osinfo.dwBuildNumber);
 	node_att_set(node, L"Version", strBuffer, 0);

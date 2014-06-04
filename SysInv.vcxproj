@@ -50,7 +50,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -65,6 +65,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -75,7 +76,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="argparser.h" />
+    <ClInclude Include="cluster.h" />
     <ClInclude Include="node.h" />
+    <ClInclude Include="packages.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="sysinv.h" />
@@ -83,6 +86,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="argparser.cpp" />
+    <ClCompile Include="cluster.cpp" />
+    <ClCompile Include="packages.cpp" />
     <ClCompile Include="processors.cpp" />
     <ClCompile Include="diskinfo.cpp" />
     <ClCompile Include="os.cpp" />
@@ -97,6 +102,13 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="sysinv.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".gitignore" />
+    <None Include="AUTHORS" />
+    <None Include="COPYING" />
+    <None Include="README.md" />
+    <None Include="VERSION" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

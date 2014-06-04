@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "sysinv.h"
+#include "cluster.h"
 
+/* TODO: Convert this code to use node.cpp
 BOOL PrintClusteredDiskInfo()
 {
 	HCLUSTER hCluster;
@@ -138,3 +140,4 @@ cleanup_cluster:
 	// Host is not part of a cluster
 	return hasClusterDisks;
 }
+*/
