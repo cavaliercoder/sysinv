@@ -1,0 +1,17 @@
+*.o
+*.exe
+*.bin
+*.lib
+*.idb
+*.res
+*.manifest
+*.opensdf
+*.sdf
+*.suo
+*.vcxproj.*
+*.swp
+*.aps
+
+Debug/
+Release/
+ipch/
