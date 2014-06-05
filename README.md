@@ -1,4 +1,4 @@
-## SysInv
+## ![SysInv Logo](SysInv-Icon-32x32.png) SysInv
 
 ### Synopsis
 
