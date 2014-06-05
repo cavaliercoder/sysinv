@@ -107,6 +107,7 @@
     <None Include=".gitignore" />
     <None Include="AUTHORS" />
     <None Include="COPYING" />
+    <None Include="SysInv.ico" />
     <None Include="README.md" />
     <None Include="VERSION" />
   </ItemGroup>
