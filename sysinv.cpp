@@ -94,6 +94,11 @@ int main(int argc, CHAR* argv[])
 	node = GetDisksNode();
 	node_append_child(hardware, node);
 
+	// Get Failover Cluster Node
+	node = GetClusterNode();
+	if (NULL != node)
+		node_append_child(configuration, node);
+
 	// Print
 	switch(format) {
 	case OUT_XML:

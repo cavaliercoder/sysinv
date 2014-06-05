@@ -7,3 +7,4 @@ PNODE GetPackagesNode();
 PNODE GetProcessorsNode();
 PNODE GetDisksNode();
 PNODE GetVolumesNode();
+PNODE GetClusterNode();
