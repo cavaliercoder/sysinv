@@ -12,7 +12,7 @@ void print_usage(int ret);
 int main(int argc, CHAR* argv[])
 {
 	FILE *out = stdout;
-	PNODE root, software, hardware, storage, configuration, node;
+	PNODE root, agent, software, hardware, storage, configuration, node;
 	DWORD format = OUT_XML;
 	DWORD i = 0;
 	PARGLIST argList = parse_args(argc, argv);
@@ -68,6 +68,10 @@ int main(int argc, CHAR* argv[])
 
 	// Build info nodes
 	root = GetSystemNode();
+	
+	// Get agent info
+	agent = GetAgentNode();
+	node_append_child(root, agent);
 
 	software = node_append_new(root, L"Software", NODE_FLAG_PLACEHOLDER);
 	hardware = node_append_new(root, L"Hardware", NODE_FLAG_PLACEHOLDER);
