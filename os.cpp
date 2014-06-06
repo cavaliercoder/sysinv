@@ -1,9 +1,24 @@
 #include "stdafx.h"
 #include "sysinv.h"
+#include "os.h"
 
 PNODE GetOperatingSystemNode()
 {
-	PNODE node = node_alloc(L"OperatingSystem", 0);
+	PNODE node = NULL;
+	PNODE osNode = node_alloc(_T("OperatingSystem"), 0);
+
+	if (NULL != (node = GetOsVersionNode()))
+		node_append_child(osNode, node);
+	
+	if (NULL != (node = GetOsIdentityNode()))
+		node_append_child(osNode, node);
+
+	return osNode;
+}
+
+PNODE GetOsVersionNode()
+{
+	PNODE node = node_alloc(L"VersionInfo", 0);
 	OSVERSIONINFOEX osinfo;
 	TCHAR strBuffer[MAX_PATH + 1];
 	HKEY hKey = 0;
@@ -142,4 +157,63 @@ PNODE GetOperatingSystemNode()
 	}
 
 	return node;
+}
+
+PNODE GetOsIdentityNode()
+{
+	PNODE identityNode = NULL;
+	TCHAR *c = NULL;
+	TCHAR computerName[MAX_COMPUTERNAME_LENGTH + 1];
+	TCHAR computerAccountName[MAX_COMPUTERNAME_LENGTH + 2];
+	LPTSTR domainName = NULL;
+	LPTSTR szSid = NULL;
+	DWORD bufferlen = MAX_COMPUTERNAME_LENGTH + 1;
+	DWORD cbSid = 0;
+	DWORD refDomainLen = 0;
+	PSID sid = NULL;
+	SID_NAME_USE sidNameUse;
+	LPCTSTR pszSubKey = _T("SOFTWARE\\Microsoft\\Cryptography");
+	HKEY hKey = 0;
+	TCHAR machineGuid[38];
+	DWORD machineGuidLen = sizeof(machineGuid);
+	identityNode = node_alloc(_T("Identification"), 0);
+
+	DWORD result = 0;
+
+	// Get host name (for machine account)
+	GetComputerName(computerName, &bufferlen);
+	node_att_set(identityNode, _T("ComputerName"), computerName, 0);
+
+	// Append '\' to build machine account name
+	swprintf(computerAccountName, _T("%s\\"), computerName);
+
+	// Get required buffer sizes
+	if (! LookupAccountName(NULL, computerAccountName, NULL, &cbSid, NULL, &refDomainLen, &sidNameUse)) {
+		// Allocate
+		sid = (PSID) new BYTE[cbSid];
+		domainName = new TCHAR[refDomainLen];
+
+		// Get SID and domain
+		if (LookupAccountName(NULL, computerAccountName, sid, &cbSid, domainName, &refDomainLen, &sidNameUse)) {
+			node_att_set(identityNode, _T("Domain"), domainName, 0);
+
+			// Convert SID to string
+			if (ConvertSidToStringSid(sid, &szSid)) {
+				node_att_set(identityNode, _T("MachineSid"), szSid, 0);
+				LocalFree(szSid);
+			}
+		}
+	}
+
+	// Get Cryptography GUID
+	if (ERROR_SUCCESS == (result = RegOpenKeyEx(HKEY_LOCAL_MACHINE, pszSubKey, 0, KEY_READ, &hKey))){
+		if (ERROR_SUCCESS == (result = RegQueryValueEx(hKey, _T("MachineGuid"), NULL, NULL, (LPBYTE)&machineGuid, &machineGuidLen))) {
+			node_att_set(identityNode, _T("MachineGuid"), machineGuid, 0);
+		}
+
+		RegCloseKey(hKey);
+	}
+
+
+	return identityNode;
 }
