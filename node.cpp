@@ -391,6 +391,62 @@ void fprintcx(FILE *file, const LPTSTR s, int count)
 
 int node_to_list(PNODE node, FILE *file, int flags)
 {
+	PNODE_ATT att = NULL;
+	DWORD count = 1;
+	DWORD i = 0;
+	DWORD children = node_child_count(node);
+	DWORD atts = node_att_count(node);
+	TCHAR *c = NULL;
+
+	// Print indent
+	fprintcx(file, _T("| "), indent_depth - 1);
+	fwprintf(file, _T("* %s \n"), node->Name);
+
+	// Print attributes
+	for (i = 0; i < atts; i++) {
+		att = node->Attributes[i].LinkedAttribute;
+
+		if (0 == wcslen(att->Value))
+			continue;
+
+		fprintcx(file, _T("| "), indent_depth - 1);
+		
+		// Is attribute scalar or array?
+		if (0 == (node->Attributes[i].LinkedAttribute->Flags & NODE_ATT_FLAG_ARRAY)) {
+			// Print scalar value
+			fwprintf(file, _T("|- %s = %s"), att->Key, att->Value);
+		}
+
+		else {
+			fwprintf(file, _T("|- %s = "), att->Key);
+
+			// Print remaining values as comman separated
+			for (c = att->Value; (*c) != '\0'; c += wcslen(c) + 1) {
+				if (c != att->Value)
+					fwprintf(file, _T(", "));
+				fwprintf(file, c);
+			}
+		}
+		fwprintf(file, _T("\n"));
+	}
+
+	// Print children
+	if (children) {
+		fprintcx(file, _T("| "), indent_depth - 1);
+		fwprintf(file, _T("|\\\n"));
+	}
+
+	indent_depth++;
+	for (i = 0; i < children; i++){
+		count += node_to_list(node->Children[i].LinkedNode, file, flags);
+	}
+	indent_depth--;
+
+	return count;
+}
+
+int node_to_walk(PNODE node, FILE *file, int flags)
+{
 	PNODE_ATT_LINK att = NULL;
 	TCHAR buffer[1024];
 	DWORD bufferLen = sizeof(buffer);
@@ -410,7 +466,7 @@ int node_to_list(PNODE node, FILE *file, int flags)
 
 	// Print children
 	for(i = 0; i < children; i++) {
-		count += node_to_list(node->Children[i].LinkedNode, file, flags);
+		count += node_to_walk(node->Children[i].LinkedNode, file, flags);
 	}
 
 	return count;

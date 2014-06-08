@@ -3,9 +3,11 @@
 #include "argparser.h"
 
 #define APP_NAME	"sysinv"
-#define OUT_XML		0x1
-#define OUT_JSON	0x2
-#define OUT_LIST	0x3
+#define OUT_LIST	0x1
+#define OUT_XML		0x2
+#define OUT_JSON	0x3
+#define OUT_WALK	0x4
+
 
 void print_usage(int ret);
 
@@ -13,7 +15,7 @@ int main(int argc, CHAR* argv[])
 {
 	FILE *out = stdout;
 	PNODE root, agent, software, hardware, storage, configuration, node;
-	DWORD format = OUT_XML;
+	DWORD format = OUT_LIST;
 	DWORD i = 0;
 	PARGLIST argList = parse_args(argc, argv);
 	PARG arg;
@@ -53,6 +55,9 @@ int main(int argc, CHAR* argv[])
 
 			else if(0 == stricmp("json", arg->val))
 				format = OUT_JSON;
+
+			else if (0 == stricmp("walk", arg->val))
+				format = OUT_WALK;
 
 			else if(0 == stricmp("list", arg->val))
 				format = OUT_LIST;
@@ -113,6 +118,10 @@ int main(int argc, CHAR* argv[])
 		node_to_json(root, out, 0);
 		break;
 
+	case OUT_WALK:
+		node_to_walk(root, out, 0);
+		break;
+
 	case OUT_LIST:
 		node_to_list(root, out, 0);
 		break;
@@ -130,9 +139,10 @@ void print_usage(int ret)
 	printf("%s [/F:filename] [/O:format]\n\n", APP_NAME);
 	printf("  /F          Write to file instead of printing to screen\n");
 	printf("  /O          Change output format\n");
+	printf("                LIST  Output data as snmp-walk style list\n");
 	printf("                XML   Output data as XML tree\n");
 	printf("                JSON  Output data as Javascript object\n");
-	printf("                LIST  Output data as snmp-walk style list\n");
+	printf("                WALK  Output data as snmp-walk style list\n");
 	printf("\n");
 	exit(ret);
 }

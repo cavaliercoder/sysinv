@@ -186,7 +186,7 @@ PNODE GetDiskNode(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 			node_att_set(node, L"PartitionStyle", L"MBR", 0);
 			swprintf(strBuffer, L"%u", diskLayout->Mbr.Signature);
 			node_att_set(node, L"Signature", strBuffer, 0);
-			swprintf(strBuffer, L"0x%08X", diskLayout->Mbr.Signature);
+			swprintf(strBuffer, L"%08X", diskLayout->Mbr.Signature);
 			node_att_set(node, L"SignatureHex", strBuffer, NODE_ATT_FLAG_KEY);
 			break;
 

@@ -82,11 +82,9 @@ PNODE GetClusterNodesNode(HCLUSTER hCluster)
 
 		node_append_child(nodesNode, nodeNode);
 
-	cleanup_node:
 		bufferLen = MAX_PATH + 1;
 	}
 
-clean_nodes:
 	ClusterCloseEnum(hEnumerator);
 
 	return nodesNode;

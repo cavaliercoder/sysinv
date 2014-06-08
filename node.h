@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define NODE_MAX_PATH_LEN		260
+
 #define NODE_DELIM_DS			L"/"	// Node path delimeter
 #define NODE_DELIM_ATT			L"."	// Attribute delimeter
 #define NODE_DELIM_VAL			L" = "	// Attribute value delimeter
@@ -75,5 +77,6 @@ LPTSTR node_att_get(PNODE node, const LPTSTR key);
 int node_to_list(PNODE node, FILE *file, int flags);
 int node_to_xml(PNODE node, FILE *file, int flags);
 int node_to_json(PNODE node, FILE *file, int flags);
+int node_to_walk(PNODE node, FILE *file, int flags);
 
 #endif

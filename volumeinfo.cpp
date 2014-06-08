@@ -27,7 +27,7 @@ PNODE GetVolumesNode()
 
 PNODE GetVolumeNode(__in PNODE parent, __in LPTSTR volumeName)
 {
-	PNODE volumeNode, dosPathsNode, mountsNode, extentsNode, extentNode;
+	PNODE volumeNode, extentsNode, extentNode;
 	WCHAR buffer[8][MAX_PATH + 1];
 	DWORD dwords[4];
 	LPTSTR dbuffer = NULL;
@@ -67,8 +67,7 @@ PNODE GetVolumeNode(__in PNODE parent, __in LPTSTR volumeName)
 	}
 	// Expand DosPath string array
 	if(NULL != dbuffer) {
-		dosPathsNode = node_append_new(volumeNode, L"DosPaths", 0);
-		node_att_set_multi(dosPathsNode, L"DosPath", dbuffer, 0);
+		node_att_set_multi(volumeNode, L"DosPaths", dbuffer, 0);
 		LocalFree(dbuffer);
 	}
 	
@@ -90,8 +89,7 @@ PNODE GetVolumeNode(__in PNODE parent, __in LPTSTR volumeName)
 	}
 
 	if(NULL != dbuffer) {
-		mountsNode = node_append_new(volumeNode, L"MountPoints", 0);
-		node_att_set_multi(mountsNode, L"MountPoint", dbuffer, 0);
+		node_att_set_multi(volumeNode, L"MountPoints", dbuffer, 0);
 		LocalFree(dbuffer);
 	}
 
