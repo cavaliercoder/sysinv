@@ -120,6 +120,12 @@ PNODE GetSmbiosNode()
 	// Create a node
 	biosNode = node_alloc(_T("Smbios"), 0);
 
+	swprintf(buffer, _T("%u.%u"), smbios->SMBIOSMajorVersion, smbios->SMBIOSMinorVersion);
+	node_att_set(biosNode, _T("Version"), buffer, 0);
+	
+	swprintf(buffer, _T("%u"), smbios->DmiRevision);
+	node_att_set(biosNode, _T("DmiRevision"), buffer, 0);
+
 	while (NULL != (header = GetNextStructure(smbios, header))) {
 		switch (header->Type) {
 		case SMB_TABLE_BIOS:
