@@ -6,25 +6,31 @@
 #define VERSION_REVISION            0
 #define VERSION_BUILD               0
 
-#define VER_FILE_DESCRIPTION_STR    ""
+#define VER_FILE_DESCRIPTION_STR    "Hardware and software inventory for Microsoft Windows systems"
 #define VER_FILE_VERSION            VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, VERSION_BUILD
 #define VER_FILE_VERSION_STR        STRINGIZE(VERSION_MAJOR)        \
 									"." STRINGIZE(VERSION_MINOR)    \
 									"." STRINGIZE(VERSION_REVISION) \
 									"." STRINGIZE(VERSION_BUILD)    \
 
-#define VER_PRODUCTNAME_STR         "SysInv"
+#ifdef _WIN64
+#define VER_PRODUCTNAME_STR         "SysInv64"
+#else
+#define VER_PRODUCTNAME_STR         "SysInv32"
+#endif
+
 #define VER_PRODUCT_COMPANY			"http://cavaliercoder.com"
 #define VER_PRODUCT_VERSION         VER_FILE_VERSION
 #define VER_PRODUCT_VERSION_STR     VER_FILE_VERSION_STR
 #define VER_ORIGINAL_FILENAME_STR   VER_PRODUCTNAME_STR ".exe"
+
 #define VER_INTERNAL_NAME_STR       VER_ORIGINAL_FILENAME_STR
 #define VER_COPYRIGHT_STR           "Copyright (C) Ryan Armstrong 2014"
 
 #ifdef _DEBUG
 #define VER_VER_DEBUG				VS_FF_DEBUG
 #else
-#define VER_VER_DEBUG             0
+#define VER_VER_DEBUG				0
 #endif
 
 #define VER_FILEOS                  VOS_NT_WINDOWS32
