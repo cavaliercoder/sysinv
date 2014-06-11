@@ -488,7 +488,7 @@ int node_to_xml(PNODE node, FILE *file, int flags)
 
 	// Print xml declaration
 	if(0 == (flags & NODE_XML_FLAG_NODEC))
-		fwprintf(file, L"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>%s", nl);
+		fwprintf(file, L"<?xml version=\"1.0\" encoding=\"Windows-1252\" standalone=\"yes\" ?>%s", nl);
 
 	// Indentation
 	fprintcx(file, NODE_XML_DELIM_INDENT, indent);
