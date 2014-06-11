@@ -158,7 +158,7 @@ PNODE GetDiskNode(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 		node_att_set(node, L"DosPath", strBuffer, 0);
 	}
 
-	swprintf(strBuffer, L"Win32_DiskDrive.DeviceID=\"\\\\.\\PHYSICALDRIVE%u\"", deviceNumber->DeviceNumber);
+	swprintf(strBuffer, L"\\\\.\\ROOT\\CIMV2:Win32_DiskDrive.DeviceID=\"\\\\\\\\.\\\\PHYSICALDRIVE%u\"", deviceNumber->DeviceNumber);
 	node_att_set(node, L"WmiPath", strBuffer, 0);
 
 	// TODO: Add first drive letter to the perf counter path
