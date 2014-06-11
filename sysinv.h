@@ -2,6 +2,7 @@
 #include "node.h"
 
 PNODE GetAgentNode();
+PNODE GetSmbiosNode();
 PNODE GetSystemNode();
 PNODE GetOperatingSystemNode();
 PNODE GetPackagesNode();

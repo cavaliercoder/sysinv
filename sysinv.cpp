@@ -14,7 +14,7 @@ void print_usage(int ret);
 int main(int argc, CHAR* argv[])
 {
 	FILE *out = stdout;
-	PNODE root, agent, software, hardware, storage, configuration, node;
+	PNODE root, agent, software, hardware, smbios, storage, configuration, node;
 	DWORD format = OUT_LIST;
 	DWORD i = 0;
 	PARGLIST argList = parse_args(argc, argv);
@@ -82,6 +82,10 @@ int main(int argc, CHAR* argv[])
 	hardware = node_append_new(root, L"Hardware", NODE_FLAG_PLACEHOLDER);
 	configuration = node_append_new(root, L"Configuration", NODE_FLAG_PLACEHOLDER);
 	storage = node_append_new(configuration, L"Storage", NODE_FLAG_PLACEHOLDER);
+
+	// SMBIOS info
+	smbios = GetSmbiosNode();
+	node_append_child(hardware, smbios);
 
 	// Get OS info
 	node = GetOperatingSystemNode();
