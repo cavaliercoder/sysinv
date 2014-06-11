@@ -39,10 +39,39 @@ PNODE GetVolumeNode(__in PNODE parent, __in LPTSTR volumeName)
 	PVOLUME_DISK_EXTENTS extents;
 	DISK_EXTENT extent;
 	DWORD i;
+	UINT driveType;
 
 	// Allocate new node
 	volumeNode = node_alloc(L"Volume", NODE_FLAG_TABLE_ENTRY);
 	node_att_set(volumeNode, L"Name", volumeName, NODE_ATT_FLAG_KEY);
+
+	// Get volume type
+	driveType = GetDriveType(volumeName);
+	switch (driveType) {
+	case DRIVE_REMOVABLE:
+		node_att_set(volumeNode, _T("Type"), _T("Removable"), 0);
+		break;
+
+	case DRIVE_FIXED:
+		node_att_set(volumeNode, _T("Type"), _T("Fixed"), 0);
+		break;
+
+	case DRIVE_REMOTE:
+		node_att_set(volumeNode, _T("Type"), _T("Network"), 0);
+		break;
+		
+	case DRIVE_CDROM:
+		node_att_set(volumeNode, _T("Type"), _T("Optical"), 0);
+		break;
+
+	case DRIVE_RAMDISK:
+		node_att_set(volumeNode, _T("Type"), _T("RAM Disk"), 0);
+		break;
+
+	default:
+		node_att_set(volumeNode, _T("Type"), _T("Unknown"), 0);
+		break;
+	}
 
 	// Get volume path without trailing '\'
 	wcscpy((TCHAR *) &buffer, volumeName);
