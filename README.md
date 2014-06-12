@@ -15,7 +15,7 @@ SysInv aims to be an equivalent Windows counterpart for excellent Linux tools su
 
 * Fast and lightweight
 
-* Support for Windows 2000 and above
+* Support for Windows XP/2003 and above
 
 * Native C++ binary. No dependencies
 
