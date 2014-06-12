@@ -45,6 +45,8 @@ PNODE GetBiosSystemDetail(PSMBIOS_STRUCT_HEADER header);
 PNODE GetBaseBoardDetail(PSMBIOS_STRUCT_HEADER header);
 PNODE GetChassisDetail(PSMBIOS_STRUCT_HEADER header);
 PNODE GetProcSocketDetail(PSMBIOS_STRUCT_HEADER header);
+PNODE GetMemoryControllerDetail(PSMBIOS_STRUCT_HEADER header);
+PNODE GetOemStringsDetail(PSMBIOS_STRUCT_HEADER header);
 
 LPTSTR GetSmbiosString(PSMBIOS_STRUCT_HEADER table, BYTE index)
 {
@@ -150,6 +152,16 @@ PNODE EnumSmbiosTables()
 		case SMB_TABLE_PROCESSOR:
 			node = GetProcSocketDetail(header);
 			node_append_child(biosNode, node);			
+			break;
+
+		case SMB_TABLE_MEMCTRL:
+			node = GetMemoryControllerDetail(header);
+			node_append_child(biosNode, node);
+			break;
+
+		case SMB_TABLE_OEM_STRINGS:
+			node = GetOemStringsDetail(header);
+			node_append_child(biosNode, node);
 			break;
 
 		default:
@@ -409,6 +421,35 @@ PNODE GetProcSocketDetail(PSMBIOS_STRUCT_HEADER header)
 
 	swprintf(buffer, _T("%uMhz"), procInfo->CurrentSpeed);
 	node_att_set(node, _T("CurrentSpeed"), buffer, 0);
+
+	return node;
+}
+
+// Type 5
+PNODE GetMemoryControllerDetail(PSMBIOS_STRUCT_HEADER header)
+{
+	return NULL;
+}
+
+// Type 11
+PNODE GetOemStringsDetail(PSMBIOS_STRUCT_HEADER header)
+{
+	DWORD i;
+	LPTSTR unicode = NULL;
+	TCHAR buffer[64];
+	POEM_STRINGS oemStrings = (POEM_STRINGS)header;
+	PNODE node = node_alloc(_T("OemStrings"), 0);
+	PNODE stringNode = NULL;
+
+	for (i = 1; i < oemStrings->StringCount; i++) {
+		_snwprintf(buffer, 64, _T("%u"), i);
+		unicode = GetSmbiosString(header, i);
+
+		stringNode = node_append_new(node, _T("OemString"), 0);
+		node_att_set(stringNode, _T("Index"), buffer, 0);
+		node_att_set(stringNode, _T("Value"), unicode, 0);
+		LocalFree(unicode);
+	}
 
 	return node;
 }

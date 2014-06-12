@@ -2,11 +2,15 @@
 
 typedef unsigned long long QWORD;
 
-#define SMB_TABLE_BIOS			0
-#define SMB_TABLE_SYSTEM		1
-#define SMB_TABLE_BASEBOARD		2
-#define SMB_TABLE_CHASSIS		3
-#define SMB_TABLE_PROCESSOR		4
+#define SMB_TABLE_BIOS				0
+#define SMB_TABLE_SYSTEM			1
+#define SMB_TABLE_BASEBOARD			2
+#define SMB_TABLE_CHASSIS			3
+#define SMB_TABLE_PROCESSOR			4
+#define SMB_TABLE_MEMCTRL			5
+#define SMB_TABLE_MEMMODULES		6
+#define SMB_TABLE_OEM_STRINGS		11
+#define SMB_TABLE_SYS_CFG_OPTIONS	12
 
 typedef struct _RawSmbiosData
 {
@@ -120,3 +124,35 @@ typedef struct _ProcInfo26
 	/* v2.6+ */
 	WORD ProcessorFamily2;
 } PROC_INFO_26, *PPROC_INFO_26;
+
+typedef struct _MemoryController
+{
+	/* v2.0+ */
+	SMBIOS_STRUCT_HEADER Header;
+	BYTE ErrorDetectionMethod;
+	BYTE ErrorCorrectingCapability;
+	BYTE SupportedInterleave;
+	BYTE CurrentInterleave;
+	BYTE MaximumModuleSize;
+	WORD SupportedSpeeds;
+	WORD SupportedMemoryTypes;
+	BYTE ModuleVoltage;
+	BYTE AssociatedSlots;
+	BYTE ModuleConfigHandles; // Variable length
+	/* v2.1+ */
+	// BYTE EnabledErrorCorrectionCapabilities;
+} MEMORY_CONTROLLER, *PMEMORY_CONTROLLER;
+
+// Type 11
+typedef struct _OemStrings
+{
+	SMBIOS_STRUCT_HEADER Header;
+	BYTE StringCount;
+} OEM_STRINGS, *POEM_STRINGS;
+
+// Type 12
+typedef struct _SystemConfigurationOptions
+{
+	SMBIOS_STRUCT_HEADER Header;
+	BYTE StringCount;
+} SYS_CFG_OPTIONS, *PSYS_CFG_OPTIONS;
