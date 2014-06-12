@@ -24,14 +24,14 @@ PNODE GetPackagesNode()
 	cchSid = sizeof(szSid) / sizeof(szSid[0]);
 
 	while(ERROR_SUCCESS == (ret = MsiEnumProductsEx(
-		NULL, 
-		L"s-1-0-0", // All users
-		MSIINSTALLCONTEXT_USERMANAGED | MSIINSTALLCONTEXT_USERUNMANAGED | MSIINSTALLCONTEXT_MACHINE,
-		index++,
-		szInstalledProductCode,
-		&dwInstalledContext,
-		szSid,
-		&cchSid))) {
+			NULL,
+			L"s-1-0-0", // All users
+			MSIINSTALLCONTEXT_USERMANAGED | MSIINSTALLCONTEXT_USERUNMANAGED | MSIINSTALLCONTEXT_MACHINE,
+			index++,
+			szInstalledProductCode,
+			&dwInstalledContext,
+			szSid,
+			&cchSid))) {
 
 		node = node_alloc(_T("Package"), NODE_FLAG_TABLE_ENTRY);
 
@@ -79,6 +79,10 @@ PNODE GetPackagesNode()
 
 
 		node_append_child(packages, node);
+	}
+
+	if (ERROR_NO_MORE_ITEMS != ret) {
+		SetError(ERR_WARN, ret, _T("Failed to enumerate installed products"));
 	}
 
 	return packages;

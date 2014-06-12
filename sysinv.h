@@ -1,4 +1,6 @@
 #include "stdafx.h"
+
+#include "common.h"
 #include "node.h"
 
 PNODE GetAgentNode();

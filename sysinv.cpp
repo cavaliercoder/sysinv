@@ -1,13 +1,12 @@
 #include "stdafx.h"
 #include "sysinv.h"
 #include "argparser.h"
+#include "version.h"
 
-#define APP_NAME	"sysinv"
 #define OUT_LIST	0x1
 #define OUT_XML		0x2
 #define OUT_JSON	0x3
 #define OUT_WALK	0x4
-
 
 void print_usage(int ret);
 
@@ -112,6 +111,11 @@ int main(int argc, CHAR* argv[])
 	if (NULL != node)
 		node_append_child(configuration, node);
 
+	// Add errors
+	node = GetErrorLogNode();
+	if (NULL != node)
+		node_append_child(root, node);
+
 	// Print
 	switch(format) {
 	case OUT_XML:
@@ -139,8 +143,11 @@ int main(int argc, CHAR* argv[])
 
 void print_usage(int ret)
 {
-	printf("Display system information for the current host in parsable formats.\n\n");
-	printf("%s [/F:filename] [/O:format]\n\n", APP_NAME);
+	printf("%s v%s\n%s %s\n\n%s\n\n", 
+		VER_PRODUCTNAME_STR, VER_PRODUCT_VERSION_STR, 
+		VER_COPYRIGHT_STR, VER_PRODUCT_COMPANY, 
+		VER_FILE_DESCRIPTION_STR);
+	printf("%s [/F:filename] [/O:format]\n\n", VER_ORIGINAL_FILENAME_STR);
 	printf("  /F          Write to file instead of printing to screen\n");
 	printf("  /O          Change output format\n");
 	printf("                LIST  Output data as snmp-walk style list\n");

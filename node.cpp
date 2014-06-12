@@ -17,7 +17,10 @@ PNODE node_alloc(const LPTSTR name, int flags)
 		+ (sizeof(TCHAR) * (wcslen(name) + 1));
 
 	// Allocate
-	node = (PNODE) calloc(1, size);
+	if (NULL == (node = (PNODE)calloc(1, size))) {
+		fprintf(stderr, "Failed to allocate memory for new node\n");
+		exit(ERROR_OUTOFMEMORY);
+	}
 	node->Children = (PNODE_LINK) calloc(1, sizeof(NODE_LINK));
 	node->Attributes = (PNODE_ATT_LINK) calloc(1, sizeof(NODE_ATT_LINK));
 
@@ -168,7 +171,10 @@ int node_append_child(PNODE parent, PNODE child)
 	new_count = old_count + 1;
 
 	// Allocate new link list
-	new_links = (PNODE_LINK) calloc(new_count + 1, sizeof(NODE_LINK));
+	if (NULL == (new_links = (PNODE_LINK)calloc(new_count + 1, sizeof(NODE_LINK)))) {
+		fprintf(stderr, "Failed to allocate memory for appending node\n");
+		exit(ERROR_OUTOFMEMORY);
+	}
 	
 	// Copy old child links
 	for(i = 0; i < old_count; i++)
@@ -198,11 +204,17 @@ PNODE node_append_new(PNODE parent, const LPTSTR name, int flags)
 PNODE_ATT node_alloc_att(const LPTSTR key, const LPTSTR value, int flags)
 {
 	PNODE_ATT att = NULL;
+	LPTSTR nvalue = NULL;
 	int size;
+
+	if (NULL == key)
+		return att;
+
+	nvalue = (NULL == value) ? wcsdup(_T("")) : value;
 
 	size = sizeof(NODE_ATT)
 		+ (sizeof(TCHAR) * (wcslen(key) + 1))
-		+ (sizeof(TCHAR) * (wcslen(value) + 1));
+		+ (sizeof(TCHAR) * (wcslen(nvalue) + 1));
 
 	att = (PNODE_ATT) calloc(1, size);
 
@@ -210,7 +222,7 @@ PNODE_ATT node_alloc_att(const LPTSTR key, const LPTSTR value, int flags)
 	wcscpy(att->Key, key);
 
 	att->Value = att->Key + wcslen(key) + 1;
-	wcscpy(att->Value, value);
+	wcscpy(att->Value, nvalue);
 
 	att->Flags = flags;
 

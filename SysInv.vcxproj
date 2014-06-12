@@ -146,6 +146,7 @@
   <ItemGroup>
     <ClInclude Include="argparser.h" />
     <ClInclude Include="cluster.h" />
+    <ClInclude Include="common.h" />
     <ClInclude Include="node.h" />
     <ClInclude Include="os.h" />
     <ClInclude Include="packages.h" />
@@ -160,6 +161,7 @@
     <ClCompile Include="agent.cpp" />
     <ClCompile Include="argparser.cpp" />
     <ClCompile Include="cluster.cpp" />
+    <ClCompile Include="common.cpp" />
     <ClCompile Include="packages.cpp" />
     <ClCompile Include="processors.cpp" />
     <ClCompile Include="diskinfo.cpp" />

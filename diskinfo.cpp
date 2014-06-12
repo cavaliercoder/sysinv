@@ -12,11 +12,12 @@ PNODE GetDisksNode()
 	SP_INTERFACE_DEVICE_DETAIL_DATA *detailData = NULL;
 	DWORD index = 0;
 
-
 	// Get device info handle
 	hDevInfo = SetupDiGetClassDevs(&GUID_DEVINTERFACE_DISK, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
-	if(INVALID_HANDLE_VALUE == hDevInfo)
+	if (INVALID_HANDLE_VALUE == hDevInfo) {
+		SetError(ERR_CRIT, GetLastError(), _T("Failed to get a handle to a device information set to enumerate local disks"));
 		return NULL;
+	}
 	
 	PNODE node = node_alloc(L"Disks", NODE_FLAG_TABLE);
 	while(NULL != GetDiskNode(node, hDevInfo, index++))
@@ -42,6 +43,8 @@ PNODE GetDiskNode(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 	DRIVE_LAYOUT_INFORMATION_EX *diskLayout = NULL;
 	DISK_GEOMETRY_EX *diskGeometry = NULL;
 	SCSI_ADDRESS *scsiAddress = NULL;
+
+	DWORD error = 0;
 	
 	// Create return node
 	node = node_alloc(L"Disk", NODE_FLAG_TABLE_ENTRY);
@@ -50,8 +53,11 @@ PNODE GetDiskNode(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 	// Get device info (used for getting device properties from the registry)
 	deviceInfoData = (SP_DEVINFO_DATA *) LocalAlloc(LPTR, sizeof(SP_DEVINFO_DATA));
 	deviceInfoData->cbSize = sizeof(SP_DEVINFO_DATA);
-	if(!SetupDiEnumDeviceInfo(hDevInfo, index, deviceInfoData))
+	if (!SetupDiEnumDeviceInfo(hDevInfo, index, deviceInfoData)) {
+		if (ERROR_NO_MORE_ITEMS != (error = GetLastError()))
+			SetError(ERR_CRIT, error, _T("Failed to get SP_DEVINFO_DATA for disk device %u"), index);
 		goto error;
+	}
 	
 	// SP_DEVICE_INTERFACE_DATA *interfaceData
 	// Get device interface data (used to get interface details)

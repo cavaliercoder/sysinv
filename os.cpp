@@ -213,7 +213,10 @@ PNODE GetOsIdentityNode()
 
 		RegCloseKey(hKey);
 	}
-
+	
+	else {
+		SetError(ERR_WARN, GetLastError(), _T("Failed to get Machine GUID from Registry"));
+	}
 
 	return identityNode;
 }
