@@ -79,17 +79,18 @@ PNODE GetOsVersionDetail()
 	case VER_NT_SERVER:
 		switch(osinfo.dwMajorVersion) {
 			case 5:
-				switch(osinfo.dwMinorVersion) {
-				case 0:
+				if (0 == osinfo.dwMinorVersion) {
 					wcscpy(strBuffer, L"Windows 2000 Server");
-					break;
-				case 1:
-					wcscpy(strBuffer, L"Windows Server 2003");
-					break;
-				case 2:
-					wcscpy(strBuffer, L"Windows Server 2003 R2");
-					break;
 				}
+
+				else {
+					// R2?
+					if (0 != GetSystemMetrics(SM_SERVERR2))
+						wcscpy(strBuffer, L"Windows Server 2003 R2");
+					else
+						wcscpy(strBuffer, L"Windows Server 2003");
+				}
+
 				break;
 
 			case 6:
@@ -119,12 +120,12 @@ PNODE GetOsVersionDetail()
 	}
 	node_att_set(node, L"BaseName", strBuffer, 0);
 
-	// Determine OS Edition
+	// Determine OS Edition (Needs to move into version specific logic)
 	if(VER_SUITE_BLADE & osinfo.wSuiteMask)
 		node_att_set(node, L"Edition", L"Web Edition", 0);
 
 	else if(VER_SUITE_COMPUTE_SERVER & osinfo.wSuiteMask)
-		node_att_set(node, L"Edition", L"Computer Cluster Edition", 0);
+		node_att_set(node, L"Edition", L"Compute Cluster Edition", 0);
 
 	else if (VER_SUITE_DATACENTER & osinfo.wSuiteMask)
 		node_att_set(node, L"Edition", L"Datacenter Edition", 0);
@@ -137,6 +138,9 @@ PNODE GetOsVersionDetail()
 
 	else if (VER_SUITE_PERSONAL & osinfo.wSuiteMask)
 		node_att_set(node, L"Edition", L"Home", 0);
+
+	else
+		node_att_set(node, L"Edition", L"Standard Edition", 0);
 	
 	// OS Version numbers
 	swprintf(strBuffer, L"%u.%u.%u", osinfo.dwMajorVersion, osinfo.dwMinorVersion, osinfo.dwBuildNumber);
