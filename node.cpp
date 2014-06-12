@@ -168,6 +168,9 @@ int node_append_child(PNODE parent, PNODE child)
 
 	// Count old children
 	old_count = node_child_count(parent);
+	if (NULL == child)
+		return old_count;
+
 	new_count = old_count + 1;
 
 	// Allocate new link list
