@@ -2,9 +2,9 @@
 #include "sysinv.h"
 #include "Ntddscsi.h"
 
-PNODE GetDiskNode(__in PNODE parent, HDEVINFO hDevInfo, DWORD index);
+PNODE GetDiskDetail(__in PNODE parent, HDEVINFO hDevInfo, DWORD index);
 
-PNODE GetDisksNode()
+PNODE EnumDisks()
 {
 	HDEVINFO hDevInfo;
 	SP_DEVINFO_DATA *deviceInfoData = NULL;
@@ -20,13 +20,13 @@ PNODE GetDisksNode()
 	}
 	
 	PNODE node = node_alloc(L"Disks", NODE_FLAG_TABLE);
-	while(NULL != GetDiskNode(node, hDevInfo, index++))
+	while(NULL != GetDiskDetail(node, hDevInfo, index++))
 	{}
 
 	return node;
 }
 
-PNODE GetDiskNode(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
+PNODE GetDiskDetail(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 {
 	PNODE node = NULL, geoNode = NULL, partsNode = NULL, partNode = NULL, scsiNode = NULL;
 	TCHAR strBuffer[MAX_PATH + 1];
@@ -45,78 +45,89 @@ PNODE GetDiskNode(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 	SCSI_ADDRESS *scsiAddress = NULL;
 
 	DWORD error = 0;
-	
+
 	// Create return node
 	node = node_alloc(L"Disk", NODE_FLAG_TABLE_ENTRY);
-	
+
 	// SP_DEVINFO_DATA *deviceInfoData
 	// Get device info (used for getting device properties from the registry)
-	deviceInfoData = (SP_DEVINFO_DATA *) LocalAlloc(LPTR, sizeof(SP_DEVINFO_DATA));
+	deviceInfoData = (SP_DEVINFO_DATA *)LocalAlloc(LPTR, sizeof(SP_DEVINFO_DATA));
 	deviceInfoData->cbSize = sizeof(SP_DEVINFO_DATA);
 	if (!SetupDiEnumDeviceInfo(hDevInfo, index, deviceInfoData)) {
 		if (ERROR_NO_MORE_ITEMS != (error = GetLastError()))
-			SetError(ERR_CRIT, error, _T("Failed to get SP_DEVINFO_DATA for disk device %u"), index);
+			SetError(ERR_CRIT, error, _T("Failed to get SP_DEVINFO_DATA structure for disk device %u"), index);
 		goto error;
 	}
-	
+
 	// SP_DEVICE_INTERFACE_DATA *interfaceData
 	// Get device interface data (used to get interface details)
-	interfaceData = (SP_DEVICE_INTERFACE_DATA *) LocalAlloc(LPTR, sizeof(SP_DEVICE_INTERFACE_DATA));
+	interfaceData = (SP_DEVICE_INTERFACE_DATA *)LocalAlloc(LPTR, sizeof(SP_DEVICE_INTERFACE_DATA));
 	interfaceData->cbSize = sizeof(SP_INTERFACE_DEVICE_DATA);
-	if(!SetupDiEnumInterfaceDevice(hDevInfo, NULL, &GUID_DEVINTERFACE_DISK, index, interfaceData))
+	if (!SetupDiEnumInterfaceDevice(hDevInfo, NULL, &GUID_DEVINTERFACE_DISK, index, interfaceData)) {
+		SetError(ERR_CRIT, GetLastError(), _T("Failed to get SP_DEVICE_INTERFACE_DATA structure for disk device %u"), index);
 		goto error;
+	}
+
 
 	// SP_INTERFACE_DEVICE_DETAIL_DATA* detailData;
 	// Get device interface details (used to get device path and subsequently, file handle)
 	SetupDiGetDeviceInterfaceDetail(hDevInfo, interfaceData, NULL, NULL, &bufferSize, NULL);
-	detailData = (SP_INTERFACE_DEVICE_DETAIL_DATA*) malloc(bufferSize);
-	detailData->cbSize = sizeof(SP_INTERFACE_DEVICE_DETAIL_DATA);	
-	if (!SetupDiGetDeviceInterfaceDetail(hDevInfo, interfaceData, detailData, bufferSize, NULL, NULL))
-		goto error;	
-	
+	detailData = (SP_INTERFACE_DEVICE_DETAIL_DATA*)malloc(bufferSize);
+	detailData->cbSize = sizeof(SP_INTERFACE_DEVICE_DETAIL_DATA);
+	if (!SetupDiGetDeviceInterfaceDetail(hDevInfo, interfaceData, detailData, bufferSize, NULL, NULL)) {
+		SetError(ERR_CRIT, GetLastError(), _T("Failed to get SP_INTERFACE_DEVICE_DETAIL_DATA structure for disk device %u"), index);
+		goto error;
+	}
 
 	// HANDLE hDiskDrive
 	// Get a file handle to the disk
 	hDiskDrive = CreateFile(detailData->DevicePath, 0, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
-	if(INVALID_HANDLE_VALUE == hDiskDrive)
+	if (INVALID_HANDLE_VALUE == hDiskDrive) {
+		SetError(ERR_CRIT, GetLastError(), _T("Failed to get a file handle to disk device %u with path '%s'"), index, detailData->DevicePath);
 		goto error;
+	}
 
 	// STORAGE_DEVICE_NUMBER deviceNumber;
 	// Get disk index number
 	bufferSize = sizeof(STORAGE_DEVICE_NUMBER);
-	deviceNumber = (STORAGE_DEVICE_NUMBER *) LocalAlloc(LPTR, bufferSize);	
-	if(!DeviceIoControl(hDiskDrive, IOCTL_STORAGE_GET_DEVICE_NUMBER, NULL, 0, deviceNumber, bufferSize, &bufferSize, NULL))
+	deviceNumber = (STORAGE_DEVICE_NUMBER *)LocalAlloc(LPTR, bufferSize);
+	if (!DeviceIoControl(hDiskDrive, IOCTL_STORAGE_GET_DEVICE_NUMBER, NULL, 0, deviceNumber, bufferSize, &bufferSize, NULL)) {
+		SetError(ERR_CRIT, GetLastError(), _T("Failed to get storage device number for disk device %u"), index);
 		goto error;
+	}
 
 	// DISK_GEOMETRY_EX diskGeometry
 	// Get disk geometry
 	bufferSize = sizeof(DISK_GEOMETRY_EX);
-	diskGeometry = (DISK_GEOMETRY_EX *) LocalAlloc(LPTR, bufferSize);
-	while(!DeviceIoControl(hDiskDrive, IOCTL_DISK_GET_DRIVE_GEOMETRY_EX, NULL, 0, diskGeometry, bufferSize, &bufferSize, NULL)) {
-		if(ERROR_INSUFFICIENT_BUFFER == GetLastError()) {
-			LocalFree(diskGeometry);
+	diskGeometry = (DISK_GEOMETRY_EX *)LocalAlloc(LPTR, bufferSize);
+	while (!DeviceIoControl(hDiskDrive, IOCTL_DISK_GET_DRIVE_GEOMETRY_EX, NULL, 0, diskGeometry, bufferSize, &bufferSize, NULL)) {
+		LocalFree(diskGeometry);
+		diskGeometry = NULL;
+		if (ERROR_INSUFFICIENT_BUFFER == GetLastError()) {
 			bufferSize *= 2;
-			diskGeometry = (DISK_GEOMETRY_EX *) LocalAlloc(LPTR, bufferSize);
+			diskGeometry = (DISK_GEOMETRY_EX *)LocalAlloc(LPTR, bufferSize);
 		}
 
 		else {
-			goto error;
+			SetError(ERR_CRIT, GetLastError(), _T("Failed to get geometry for disk device %u"), index);
+			break;
 		}
 	}
 
 	// DRIVE_LAYOUT_INFORMATION_EX *diskLayout
 	// Get disk layout (partitions)
 	bufferSize = sizeof(DRIVE_LAYOUT_INFORMATION_EX);
-	diskLayout = (DRIVE_LAYOUT_INFORMATION_EX *) LocalAlloc(LPTR,bufferSize);
-	while(!DeviceIoControl(hDiskDrive, IOCTL_DISK_GET_DRIVE_LAYOUT_EX, NULL, 0, diskLayout, bufferSize, &bufferSize, NULL)) {
-		if(ERROR_INSUFFICIENT_BUFFER == GetLastError()) {
-			if(diskLayout)
-				LocalFree(diskLayout);
-
+	diskLayout = (DRIVE_LAYOUT_INFORMATION_EX *)LocalAlloc(LPTR, bufferSize);
+	while (!DeviceIoControl(hDiskDrive, IOCTL_DISK_GET_DRIVE_LAYOUT_EX, NULL, 0, diskLayout, bufferSize, &bufferSize, NULL)) {
+		LocalFree(diskLayout);
+		diskLayout = NULL;
+		if (ERROR_INSUFFICIENT_BUFFER == GetLastError()) {
 			bufferSize *= 2;
-			diskLayout = (DRIVE_LAYOUT_INFORMATION_EX *) LocalAlloc(LPTR, bufferSize);
-		} else {
-			goto error;
+			diskLayout = (DRIVE_LAYOUT_INFORMATION_EX *)LocalAlloc(LPTR, bufferSize);
+		}
+		else {
+			SetError(ERR_CRIT, GetLastError(), _T("Failed to get partition layout for disk device %u"), index);
+			break;
 		}
 	}
 
@@ -134,9 +145,11 @@ PNODE GetDiskNode(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 		else {
 			if (scsiAddress) LocalFree(scsiAddress);
 			scsiAddress = NULL;
+
+			SetError(ERR_WARN, GetLastError(), _T("Failed to get SCSI_ADDRESS for disk device %u"), index);
 		}
 	}
-	
+
 	/*
 	 * Start building node
 	 */
@@ -145,35 +158,6 @@ PNODE GetDiskNode(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 
 	swprintf(strBuffer, L"\\\\.\\PHYSICALDRIVE%u", deviceNumber->DeviceNumber);
 	node_att_set(node, L"DeviceId", strBuffer, 0);
-
-	swprintf(strBuffer, L"%llu", diskGeometry->DiskSize.QuadPart);
-	node_att_set(node, L"Size", strBuffer, 0);
-
-	f = (diskGeometry->DiskSize.QuadPart / 1073741824);
-	swprintf(strBuffer, L"%.0fGB", f);
-	node_att_set(node, L"SizeGb", strBuffer, 0);
-
-	geoNode = node_append_new(node, L"Geometry", 0);
-	
-	swprintf(strBuffer, L"%llu", diskGeometry->Geometry.Cylinders);
-	node_att_set(geoNode, L"TotalCylinders", strBuffer, 0);
-
-	q = diskGeometry->Geometry.Cylinders.QuadPart * diskGeometry->Geometry.TracksPerCylinder;
-	swprintf(strBuffer, L"%llu", q);
-	node_att_set(geoNode, L"TotalTracks", strBuffer, 0);
-
-	q *= diskGeometry->Geometry.SectorsPerTrack;
-	swprintf(strBuffer, L"%llu", q);
-	node_att_set(geoNode, L"TotalSectors", strBuffer, 0);
-
-	swprintf(strBuffer, L"%u", diskGeometry->Geometry.TracksPerCylinder);
-	node_att_set(geoNode, L"TracksPerCylinder", strBuffer, 0);
-
-	swprintf(strBuffer, L"%u", diskGeometry->Geometry.SectorsPerTrack);
-	node_att_set(geoNode, L"SectorsPerTrack", strBuffer, 0);
-
-	swprintf(strBuffer, L"%u", diskGeometry->Geometry.BytesPerSector);
-	node_att_set(geoNode, L"BytesPerSector", strBuffer, 0);
 
 	// Friendly name
 	bufferSize = MAX_PATH + 1;
@@ -207,9 +191,41 @@ PNODE GetDiskNode(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 	if(SetupDiGetDeviceRegistryProperty(hDevInfo, deviceInfoData, SPDRP_MFG, &dataType, (PBYTE) &strBuffer, bufferSize, &bufferSize)) {
 		node_att_set(node, L"Manufacturer", strBuffer, 0);
 	}
+
+	// Append Geometry
+	if (NULL != diskGeometry) {
+		swprintf(strBuffer, L"%llu", diskGeometry->DiskSize.QuadPart);
+		node_att_set(node, L"Size", strBuffer, 0);
+
+		f = (diskGeometry->DiskSize.QuadPart / 1073741824);
+		swprintf(strBuffer, L"%.0fGB", f);
+		node_att_set(node, L"SizeGb", strBuffer, 0);
+
+		geoNode = node_append_new(node, L"Geometry", 0);
+
+		swprintf(strBuffer, L"%llu", diskGeometry->Geometry.Cylinders);
+		node_att_set(geoNode, L"TotalCylinders", strBuffer, 0);
+
+		q = diskGeometry->Geometry.Cylinders.QuadPart * diskGeometry->Geometry.TracksPerCylinder;
+		swprintf(strBuffer, L"%llu", q);
+		node_att_set(geoNode, L"TotalTracks", strBuffer, 0);
+
+		q *= diskGeometry->Geometry.SectorsPerTrack;
+		swprintf(strBuffer, L"%llu", q);
+		node_att_set(geoNode, L"TotalSectors", strBuffer, 0);
+
+		swprintf(strBuffer, L"%u", diskGeometry->Geometry.TracksPerCylinder);
+		node_att_set(geoNode, L"TracksPerCylinder", strBuffer, 0);
+
+		swprintf(strBuffer, L"%u", diskGeometry->Geometry.SectorsPerTrack);
+		node_att_set(geoNode, L"SectorsPerTrack", strBuffer, 0);
+
+		swprintf(strBuffer, L"%u", diskGeometry->Geometry.BytesPerSector);
+		node_att_set(geoNode, L"BytesPerSector", strBuffer, 0);
+	}
 	
+	// Append partition layout
 	if(NULL != diskLayout) {
-		// Get partition style
 		switch(diskLayout->PartitionStyle) {
 		case PARTITION_STYLE_MBR:
 			node_att_set(node, L"PartitionStyle", L"MBR", 0);
@@ -231,7 +247,6 @@ PNODE GetDiskNode(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 			break;
 		}
 
-		// Get partition info
 		partsNode = node_append_new(node, L"Partitions", NODE_FLAG_TABLE);
 		for(i = 0; i < diskLayout->PartitionCount; i++) {
 			// Ignore '0' partition placeholders
@@ -260,25 +275,25 @@ PNODE GetDiskNode(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 		// Get partition count
 		swprintf(strBuffer, L"%d", partCount);
 		node_att_set(node, L"PartitionCount", strBuffer, 0);
+	}
+	
+	// Append SCSI Address
+	if (NULL != scsiAddress) {
+		scsiNode = node_alloc(_T("ScsiAddress"), 0);
 
-		// SCSI Address
-		if (NULL != scsiAddress) {
-			scsiNode = node_alloc(_T("ScsiAddress"), 0);
+		swprintf(strBuffer, _T("%u"), scsiAddress->PortNumber);
+		node_att_set(scsiNode, _T("PortNumber"), strBuffer, 0); // AKA Adapter
 
-			swprintf(strBuffer, _T("%u"), scsiAddress->PortNumber);
-			node_att_set(scsiNode, _T("PortNumber"), strBuffer, 0); // AKA Adapter
+		swprintf(strBuffer, _T("%u"), scsiAddress->PathId, 0);
+		node_att_set(scsiNode, _T("PathId"), strBuffer, 0); // AKA Bus
 
-			swprintf(strBuffer, _T("%u"), scsiAddress->PathId, 0);
-			node_att_set(scsiNode, _T("PathId"), strBuffer, 0); // AKA Bus
+		swprintf(strBuffer, _T("%u"), scsiAddress->TargetId, 0);
+		node_att_set(scsiNode, _T("TargetId"), strBuffer, 0);
 
-			swprintf(strBuffer, _T("%u"), scsiAddress->TargetId, 0);
-			node_att_set(scsiNode, _T("TargetId"), strBuffer, 0);
+		swprintf(strBuffer, _T("%u"), scsiAddress->Lun, 0);
+		node_att_set(scsiNode, _T("Lun"), strBuffer, 0);
 
-			swprintf(strBuffer, _T("%u"), scsiAddress->Lun, 0);
-			node_att_set(scsiNode, _T("Lun"), strBuffer, 0);
-
-			node_append_child(node, scsiNode);
-		}
+		node_append_child(node, scsiNode);
 	}
 
 	// Finalise node result

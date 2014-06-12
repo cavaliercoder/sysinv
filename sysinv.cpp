@@ -71,10 +71,10 @@ int main(int argc, CHAR* argv[])
 	free(argList);
 
 	// Build info nodes
-	root = GetSystemNode();
+	root = GetSystemDetail();
 	
 	// Get agent info
-	agent = GetAgentNode();
+	agent = GetAgentDetail();
 	node_append_child(root, agent);
 
 	software = node_append_new(root, L"Software", NODE_FLAG_PLACEHOLDER);
@@ -83,36 +83,36 @@ int main(int argc, CHAR* argv[])
 	storage = node_append_new(configuration, L"Storage", NODE_FLAG_PLACEHOLDER);
 
 	// SMBIOS info
-	smbios = GetSmbiosNode();
+	smbios = EnumSmbiosTables();
 	node_append_child(hardware, smbios);
 
 	// Get OS info
-	node = GetOperatingSystemNode();
+	node = GetOperatingSystemDetail();
 	node_append_child(software, node);
 
 	// Get Software packages
-	node = GetPackagesNode();
+	node = EnumPackages();
 	node_append_child(software, node);
 
 	// Get CPU info
-	node = GetProcessorsNode();
+	node = EnumProcessors();
 	node_append_child(hardware, node);
 
 	// get volume info
-	node = GetVolumesNode();
+	node = EnumVolumes();
 	node_append_child(storage, node);
 	
 	// Get disks
-	node = GetDisksNode();
+	node = EnumDisks();
 	node_append_child(hardware, node);
 
 	// Get Failover Cluster Node
-	node = GetClusterNode();
+	node = EnumClusterServices();
 	if (NULL != node)
 		node_append_child(configuration, node);
 
 	// Add errors
-	node = GetErrorLogNode();
+	node = EnumErrorLog();
 	if (NULL != node)
 		node_append_child(root, node);
 

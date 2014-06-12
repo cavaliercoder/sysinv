@@ -87,7 +87,7 @@ void _SetError(LPCTSTR filename, LPCTSTR function, DWORD line, DWORD level, DWOR
 	}
 }
 
-PNODE GetErrorLogNode()
+PNODE EnumErrorLog()
 {
 	PNODE logNode = NULL;
 	PNODE errorNode = NULL;

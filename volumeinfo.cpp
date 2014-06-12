@@ -1,11 +1,11 @@
 #include "stdafx.h"
 #include "sysinv.h"
 
-PNODE GetVolumeNode(__in PNODE parent, __in LPTSTR volumeName);
+PNODE GetVolumeDetail(__in PNODE parent, __in LPTSTR volumeName);
 HANDLE GetVolumeHandle(LPWSTR volumePath);
 LPTSTR GetNextStringInMulti(LPTSTR multiString);
 
-PNODE GetVolumesNode()
+PNODE EnumVolumes()
 {
 	HANDLE fvh;
 	TCHAR lpszVolumeName[MAX_PATH + 1];
@@ -15,7 +15,7 @@ PNODE GetVolumesNode()
 	moreVolumes = (INVALID_HANDLE_VALUE != (fvh = FindFirstVolume((LPWSTR)lpszVolumeName, MAX_PATH)));
 	if(moreVolumes) {
 		while(0 != moreVolumes) {
-			GetVolumeNode(node, lpszVolumeName);
+			GetVolumeDetail(node, lpszVolumeName);
 			moreVolumes = FindNextVolume(fvh, (LPWSTR)lpszVolumeName, MAX_PATH);			
 		}
 		
@@ -25,7 +25,7 @@ PNODE GetVolumesNode()
 	return node;
 }
 
-PNODE GetVolumeNode(__in PNODE parent, __in LPTSTR volumeName)
+PNODE GetVolumeDetail(__in PNODE parent, __in LPTSTR volumeName)
 {
 	PNODE volumeNode, extentsNode, extentNode;
 	WCHAR buffer[8][MAX_PATH + 1];

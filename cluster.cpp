@@ -2,12 +2,12 @@
 #include "sysinv.h"
 #include "cluster.h"
 
-PNODE GetClusterGroupsNode(HCLUSTER hCluster);
-PNODE GetClusterGroupNode(HCLUSTER hCluster, LPWSTR groupName);
-PNODE GetResourceNode(HCLUSTER hCluster, LPWSTR resourceName);
-PNODE GetClusterNodesNode(HCLUSTER hCluster);
+PNODE EnumClusterGroups(HCLUSTER hCluster);
+PNODE EnumClusterNodes(HCLUSTER hCluster);
+PNODE GetClusterGroupDetail(HCLUSTER hCluster, LPWSTR groupName);
+PNODE GetClusterResourceDetail(HCLUSTER hCluster, LPWSTR resourceName);
 
-PNODE GetClusterNode()
+PNODE EnumClusterServices()
 {
 	PNODE clusterNode = NULL;
 	PNODE node = NULL;
@@ -45,11 +45,11 @@ PNODE GetClusterNode()
 	node_att_set(clusterNode, _T("LowestVersion"), buffer, 0);
 
 	// Get nodes
-	if (NULL != (node = GetClusterNodesNode(hCluster)))
+	if (NULL != (node = EnumClusterNodes(hCluster)))
 		node_append_child(clusterNode, node);
 
 	// Get groups
-	if (NULL != (node = GetClusterGroupsNode(hCluster)))
+	if (NULL != (node = EnumClusterGroups(hCluster)))
 		node_append_child(clusterNode, node);
 
 clean_cluster:
@@ -59,7 +59,7 @@ clean_cluster:
 	return clusterNode;
 }
 
-PNODE GetClusterNodesNode(HCLUSTER hCluster)
+PNODE EnumClusterNodes(HCLUSTER hCluster)
 {
 	PNODE nodesNode = NULL;
 	PNODE nodeNode = NULL;
@@ -90,7 +90,7 @@ PNODE GetClusterNodesNode(HCLUSTER hCluster)
 	return nodesNode;
 }
 
-PNODE GetClusterGroupsNode(HCLUSTER hCluster)
+PNODE EnumClusterGroups(HCLUSTER hCluster)
 {
 	PNODE groupsNode = NULL;
 	PNODE groupNode = NULL;
@@ -108,7 +108,7 @@ PNODE GetClusterGroupsNode(HCLUSTER hCluster)
 
 	groupsNode = node_alloc(_T("Groups"), NODE_FLAG_TABLE);
 	while (ERROR_NO_MORE_ITEMS != (res = ClusterEnum(hEnumerator, index++, &resType, (LPWSTR)&buffer, &bufferLen))) {
-		if(NULL != (groupNode = GetClusterGroupNode(hCluster, buffer)))
+		if(NULL != (groupNode = GetClusterGroupDetail(hCluster, buffer)))
 			node_append_child(groupsNode, groupNode);
 
 		bufferLen = MAX_PATH + 1;
@@ -119,7 +119,7 @@ PNODE GetClusterGroupsNode(HCLUSTER hCluster)
 	return groupsNode;
 }
 
-PNODE GetClusterGroupNode(HCLUSTER hCluster, LPWSTR groupName)
+PNODE GetClusterGroupDetail(HCLUSTER hCluster, LPWSTR groupName)
 {
 	PNODE groupNode = NULL;
 	PNODE resourcesNode = NULL;
@@ -144,7 +144,7 @@ PNODE GetClusterGroupNode(HCLUSTER hCluster, LPWSTR groupName)
 
 			while (ERROR_NO_MORE_ITEMS != (res = ClusterGroupEnum(hGroupEnum, index++, &resType, (LPWSTR) &buffer, &bufferLen))) {
 				// Ger resource node
-				if (NULL != (resourceNode = GetResourceNode(hCluster, buffer)))
+				if (NULL != (resourceNode = GetClusterResourceDetail(hCluster, buffer)))
 					node_append_child(resourcesNode, resourceNode);
 
 				bufferLen = MAX_PATH + 1;
@@ -159,7 +159,7 @@ PNODE GetClusterGroupNode(HCLUSTER hCluster, LPWSTR groupName)
 	return groupNode;
 }
 
-PNODE GetResourceNode(HCLUSTER hCluster, LPWSTR resourceName)
+PNODE GetClusterResourceDetail(HCLUSTER hCluster, LPWSTR resourceName)
 {
 	PNODE resourceNode = NULL;
 	HRESOURCE hResource = 0;

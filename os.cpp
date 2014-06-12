@@ -1,22 +1,26 @@
 #include "stdafx.h"
 #include "sysinv.h"
-#include "os.h"
 
-PNODE GetOperatingSystemNode()
+#include <sddl.h>
+
+PNODE GetOsVersionDetail();
+PNODE GetOsIdentityDetail();
+
+PNODE GetOperatingSystemDetail()
 {
 	PNODE node = NULL;
 	PNODE osNode = node_alloc(_T("OperatingSystem"), 0);
 
-	if (NULL != (node = GetOsVersionNode()))
+	if (NULL != (node = GetOsVersionDetail()))
 		node_append_child(osNode, node);
 	
-	if (NULL != (node = GetOsIdentityNode()))
+	if (NULL != (node = GetOsIdentityDetail()))
 		node_append_child(osNode, node);
 
 	return osNode;
 }
 
-PNODE GetOsVersionNode()
+PNODE GetOsVersionDetail()
 {
 	PNODE node = node_alloc(L"VersionInfo", 0);
 	OSVERSIONINFOEX osinfo;
@@ -159,7 +163,7 @@ PNODE GetOsVersionNode()
 	return node;
 }
 
-PNODE GetOsIdentityNode()
+PNODE GetOsIdentityDetail()
 {
 	PNODE identityNode = NULL;
 	TCHAR *c = NULL;

@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "sysinv.h"
 
-PNODE GetSystemNode()
+PNODE GetSystemDetail()
 {
 	TCHAR hostname[MAX_COMPUTERNAME_LENGTH + 1];
 	DWORD bufferSize = MAX_COMPUTERNAME_LENGTH + 1;

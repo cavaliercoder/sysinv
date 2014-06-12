@@ -4,11 +4,13 @@
  */
 #include "stdafx.h"
 #include "sysinv.h"
-#include "packages.h"
+
+#pragma comment(lib, "Msi.lib")
+#include <Msi.h>
 
 PNODE_ATT MsiQueryProperty(PNODE node, LPTSTR key, LPCTSTR szProductCode, LPCTSTR szUserSid, MSIINSTALLCONTEXT dwContext, LPCTSTR szProperty);
 
-PNODE GetPackagesNode()
+PNODE EnumPackages()
 {
 	PNODE packages = node_alloc(L"Packages", NODE_FLAG_TABLE);
 	PNODE node = NULL;

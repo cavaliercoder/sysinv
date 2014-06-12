@@ -2,17 +2,19 @@
 #include "sysinv.h"
 #include "version.h"
 
-PNODE GetAgentNode()
+PNODE GetAgentDetail()
 {
 	PNODE agentNode = node_alloc(_T("Agent"), 0);
 	TCHAR buffer[MAX_PATH + 1];
 
 	swprintf_s(buffer, L"%u.%u.%u.%u", VER_PRODUCT_VERSION);
 	node_att_set(agentNode, _T("Version"), buffer, 0);
-
+	
+	/* Nope...
 	swprintf_s(buffer, L"%s %s", __DATE__, __TIME__);
 	node_att_set(agentNode, _T("BuildDate"), buffer, 0);
-	
+	*/
+
 #if _DEBUG
 	node_att_set(agentNode, _T("Build"), _T("Debug"), 0);
 #else

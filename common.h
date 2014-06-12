@@ -37,6 +37,6 @@ typedef struct _ErrorMessage
 
 
 void _SetError(LPCTSTR filename, LPCTSTR function, DWORD line, DWORD level, DWORD systemErrorCode, LPCTSTR message, ...);
-PNODE GetErrorLogNode();
+PNODE EnumErrorLog();
 
 #endif

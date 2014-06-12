@@ -4,7 +4,7 @@
 
 #define BUFLEN	128
 
-PNODE GetProcessorsNode()
+PNODE EnumProcessors()
 {
 	int cpuinfo[4];
 	int i;

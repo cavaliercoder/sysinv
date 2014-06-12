@@ -90,7 +90,7 @@ PSMBIOS_STRUCT_HEADER GetNextStructure(PRAW_SMBIOS_DATA smbios, PSMBIOS_STRUCT_H
 	return NULL;
 }
 
-PNODE GetSmbiosNode()
+PNODE EnumSmbiosTables()
 {
 	PNODE biosNode = NULL;
 	PNODE node = NULL;
