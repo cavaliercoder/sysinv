@@ -345,8 +345,7 @@ PNODE GetSmbiosNode()
 
 			swprintf(buffer, _T("%uMhz"), procInfo->CurrentSpeed);
 			node_att_set(node, _T("CurrentSpeed"), buffer, 0);
-
-
+			
 			break;
 
 		default:

@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "sysinv.h"
+#include "Ntddscsi.h"
 
 PNODE GetDiskNode(__in PNODE parent, HDEVINFO hDevInfo, DWORD index);
 
@@ -26,7 +27,7 @@ PNODE GetDisksNode()
 
 PNODE GetDiskNode(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 {
-	PNODE node = NULL, geoNode = NULL, partsNode = NULL, partNode = NULL;
+	PNODE node = NULL, geoNode = NULL, partsNode = NULL, partNode = NULL, scsiNode = NULL;
 	TCHAR strBuffer[MAX_PATH + 1];
 	LPOLESTR oleBuffer;
 	DWORD bufferSize = 0, i = 0, dataType = 0, partCount = 0;
@@ -40,6 +41,7 @@ PNODE GetDiskNode(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 	STORAGE_DEVICE_NUMBER *deviceNumber = NULL;
 	DRIVE_LAYOUT_INFORMATION_EX *diskLayout = NULL;
 	DISK_GEOMETRY_EX *diskGeometry = NULL;
+	SCSI_ADDRESS *scsiAddress = NULL;
 	
 	// Create return node
 	node = node_alloc(L"Disk", NODE_FLAG_TABLE_ENTRY);
@@ -111,7 +113,28 @@ PNODE GetDiskNode(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 			goto error;
 		}
 	}
-		swprintf(strBuffer, L"%d", deviceNumber->DeviceNumber);
+
+	// SCSI_ADDRESS *scsiAddress
+	// Get SCSI port information
+	bufferSize = sizeof(SCSI_ADDRESS);
+	scsiAddress = (SCSI_ADDRESS *)LocalAlloc(LPTR, bufferSize);
+	scsiAddress->Length = bufferSize;
+	while (!DeviceIoControl(hDiskDrive, IOCTL_SCSI_GET_ADDRESS, NULL, 0, scsiAddress, bufferSize, &bufferSize, NULL)) {
+		if (ERROR_INSUFFICIENT_BUFFER == GetLastError()) {
+			if (scsiAddress) LocalFree(scsiAddress);
+			bufferSize *= 2;
+			scsiAddress = (PSCSI_ADDRESS)LocalAlloc(LPTR, bufferSize);
+		}
+		else {
+			if (scsiAddress) LocalFree(scsiAddress);
+			scsiAddress = NULL;
+		}
+	}
+	
+	/*
+	 * Start building node
+	 */
+	swprintf(strBuffer, L"%d", deviceNumber->DeviceNumber);
 	node_att_set(node, L"Index", strBuffer, NODE_ATT_FLAG_KEY);
 
 	swprintf(strBuffer, L"\\\\.\\PHYSICALDRIVE%u", deviceNumber->DeviceNumber);
@@ -209,14 +232,19 @@ PNODE GetDiskNode(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 			if(diskLayout->PartitionEntry[i].PartitionNumber > 0) {
 				partCount++;
 				partNode = node_append_new(partsNode, L"Partition", NODE_FLAG_TABLE_ENTRY);
+
 				swprintf(strBuffer, L"%d", diskLayout->PartitionEntry[i].PartitionNumber);
 				node_att_set(partNode, L"Number", strBuffer, NODE_ATT_FLAG_KEY);
+
 				swprintf(strBuffer, L"%llu", diskLayout->PartitionEntry[i].StartingOffset.QuadPart);
 				node_att_set(partNode, L"StartOffset", strBuffer, 0);
+
 				swprintf(strBuffer, L"0x%llX", diskLayout->PartitionEntry[i].StartingOffset.QuadPart);
 				node_att_set(partNode, L"StartOffsetHex", strBuffer, 0);
+
 				swprintf(strBuffer, L"%llu", diskLayout->PartitionEntry[i].PartitionLength.QuadPart);
 				node_att_set(partNode, L"Length", strBuffer, 0);
+
 				f = (diskLayout->PartitionEntry[i].PartitionLength.QuadPart / 1073741824);
 				swprintf(strBuffer, L"%.0fGB", f);
 				node_att_set(partNode, L"LengthGb", strBuffer, 0);
@@ -226,6 +254,25 @@ PNODE GetDiskNode(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 		// Get partition count
 		swprintf(strBuffer, L"%d", partCount);
 		node_att_set(node, L"PartitionCount", strBuffer, 0);
+
+		// SCSI Address
+		if (NULL != scsiAddress) {
+			scsiNode = node_alloc(_T("ScsiAddress"), 0);
+
+			swprintf(strBuffer, _T("%u"), scsiAddress->PortNumber);
+			node_att_set(scsiNode, _T("PortNumber"), strBuffer, 0); // AKA Adapter
+
+			swprintf(strBuffer, _T("%u"), scsiAddress->PathId, 0);
+			node_att_set(scsiNode, _T("PathId"), strBuffer, 0); // AKA Bus
+
+			swprintf(strBuffer, _T("%u"), scsiAddress->TargetId, 0);
+			node_att_set(scsiNode, _T("TargetId"), strBuffer, 0);
+
+			swprintf(strBuffer, _T("%u"), scsiAddress->Lun, 0);
+			node_att_set(scsiNode, _T("Lun"), strBuffer, 0);
+
+			node_append_child(node, scsiNode);
+		}
 	}
 
 	// Finalise node result
