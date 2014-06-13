@@ -11,6 +11,7 @@ typedef unsigned long long QWORD;
 #define SMB_TABLE_MEMMODULES		6
 #define SMB_TABLE_OEM_STRINGS		11
 #define SMB_TABLE_SYS_CFG_OPTIONS	12
+#define SMB_TABLE_END_OF_TABLE		127
 
 typedef struct _RawSmbiosData
 {

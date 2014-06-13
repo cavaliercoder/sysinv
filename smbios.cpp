@@ -87,11 +87,18 @@ PSMBIOS_STRUCT_HEADER GetNextStructure(PRAW_SMBIOS_DATA smbios, PSMBIOS_STRUCT_H
 	
 	// Search for the end of the unformatted structure (\0\0)
 	while (true) {
-		if ('\0' == *c && '\0' == *(c + 1))
-			return (PSMBIOS_STRUCT_HEADER)(c + 2);
+		if ('\0' == *c && '\0' == *(c + 1)) {
+			/* Make sure next table is not beyond end of SMBIOS data
+			 * (Thankyou Microsoft for ommitting the structure count
+			 * in GetSystemFirmwareTable
+			 */
+			if ((c + 2) < ((PBYTE)smbios->SMBIOSTableData + smbios->Length))
+				return (PSMBIOS_STRUCT_HEADER)(c + 2);
+			else
+				return NULL; // We reached the end
+		}
+			
 		c++;
-
-		// Todo: Ensure no overflow of smbios
 	}
 
 	return NULL;
@@ -165,20 +172,13 @@ PNODE EnumSmbiosTables()
 			break;
 
 		default:
-			goto done;
+			// Unsupported table type. Go next.
 			break;
 		}
 	}
 
 done:
-
-	/*
-	for (i = 0; i < smbios->Length; i++){
-		printf("0x%02X %c ", smbios->SMBIOSTableData[i], smbios->SMBIOSTableData[i]);
-		if (0 == (i + 1) % 4)
-			printf("\n");
-	}
-	*/
+	
 	LocalFree(smbios);
 
 	return biosNode;
