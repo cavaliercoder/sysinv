@@ -19,6 +19,10 @@ int main(int argc, CHAR* argv[])
 	PARGLIST argList = parse_args(argc, argv);
 	PARG arg;
 
+	BOOL getSoftware = 1;
+	BOOL getHardware = 1;
+	BOOL getConfiguration = 1;
+
 	for(i = 0; i < argList->count; i++) {
 		arg = &argList->args[i];
 
@@ -77,39 +81,70 @@ int main(int argc, CHAR* argv[])
 	agent = GetAgentDetail();
 	node_append_child(root, agent);
 
-	software = node_append_new(root, L"Software", NODE_FLAG_PLACEHOLDER);
-	hardware = node_append_new(root, L"Hardware", NODE_FLAG_PLACEHOLDER);
-	configuration = node_append_new(root, L"Configuration", NODE_FLAG_PLACEHOLDER);
-	storage = node_append_new(configuration, L"Storage", NODE_FLAG_PLACEHOLDER);
+	if (getHardware) {
+		hardware = node_append_new(root, L"Hardware", NODE_FLAG_PLACEHOLDER);
 
-	// SMBIOS info
-	smbios = EnumSmbiosTables();
-	node_append_child(hardware, smbios);
+		// System details (From SMBIOS)
+		node = GetBiosSystemDetail();
+		node_append_child(hardware, node);
 
-	// Get OS info
-	node = GetOperatingSystemDetail();
-	node_append_child(software, node);
+		// SMBIOS info
+		smbios = GetSmbiosDetail();
+		node_append_child(hardware, smbios);
 
-	// Get Software packages
-	node = EnumPackages();
-	node_append_child(software, node);
+		// BIOS Info
+		node = GetBiosDetail();
+		node_append_child(hardware, node);
 
-	// Get CPU info
-	node = EnumProcessors();
-	node_append_child(hardware, node);
+		// System Chassis
+		node = EnumChassis();
+		node_append_child(hardware, node);
 
-	// get volume info
-	node = EnumVolumes();
-	node_append_child(storage, node);
+		// Baseboards
+		node = EnumBaseboards();
+		node_append_child(hardware, node);
+
+		// Processor Sockets
+		node = EnumProcSockets();
+		node_append_child(hardware, node);
+
+		// Get CPU info
+		node = EnumProcessors();
+		node_append_child(hardware, node);
+
+		// Get disks
+		node = EnumDisks();
+		node_append_child(hardware, node);
+	}
+
+	if (getSoftware) {
+		software = node_append_new(root, L"Software", NODE_FLAG_PLACEHOLDER);
+		
+		// Get OS info
+		node = GetOperatingSystemDetail();
+		node_append_child(software, node);
+
+		// Get Software packages
+		node = EnumPackages();
+		node_append_child(software, node);
+	}
 	
-	// Get disks
-	node = EnumDisks();
-	node_append_child(hardware, node);
+	if (getConfiguration) {
+		configuration = node_append_new(root, L"Configuration", NODE_FLAG_PLACEHOLDER);
+		storage = node_append_new(configuration, L"Storage", NODE_FLAG_PLACEHOLDER);
 
-	// Get Failover Cluster Node
-	node = EnumClusterServices();
-	if (NULL != node)
-		node_append_child(configuration, node);
+		// Get volume info
+		node = EnumVolumes();
+		node_append_child(storage, node);
+
+		// Get Failover Cluster Node
+		node = EnumClusterServices();
+		if (NULL != node)
+			node_append_child(configuration, node);
+	}
+
+	// Release residual handles
+	ReleaseSmbiosData();
 
 	// Add errors
 	node = EnumErrorLog();

@@ -158,6 +158,9 @@
   <ItemGroup>
     <ClCompile Include="agent.cpp" />
     <ClCompile Include="argparser.cpp" />
+    <ClCompile Include="baseboard.cpp" />
+    <ClCompile Include="bios.cpp" />
+    <ClCompile Include="chassis.cpp" />
     <ClCompile Include="cluster.cpp" />
     <ClCompile Include="common.cpp" />
     <ClCompile Include="packages.cpp" />

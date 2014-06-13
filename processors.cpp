@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "sysinv.h"
+#include "smbios.h"
 #include <intrin.h>
 
 #define BUFLEN	128
@@ -67,4 +68,75 @@ PNODE EnumProcessors()
 	node_att_set(node, L"BrandString", strBuffer, 0);
 
 	return node;
+}
+
+// SMBIOS Table Type 4
+PNODE EnumProcSockets()
+{
+	PNODE procSocketsNode = node_alloc(_T("ProcessorSockets"), 0);
+	PNODE node = NULL;
+
+	PRAW_SMBIOS_DATA smbios = GetSmbiosData();
+	PSMBIOS_STRUCT_HEADER header = NULL;
+	PBYTE cursor = NULL;
+
+	LPTSTR unicode = NULL;
+	TCHAR buffer[MAX_PATH + 1];
+
+	while (NULL != (header = GetNextStructureOfType(header, SMB_TABLE_PROCESSOR))) {
+		cursor = (PBYTE)header;
+
+		// v2.0+
+		if (2 <= smbios->SMBIOSMajorVersion) {
+			// Ignore unpopulated sockets
+			// Bit 6 = CPU Sock Populated
+			if (!(*(cursor + 0x18) >> 6))
+				return node;
+
+			node = node_append_new(procSocketsNode, _T("ProcessorSockets"), 0);
+
+			// 0x04 Designation
+			unicode = GetSmbiosString(header, *(cursor + 0x04));
+			node_att_set(node, _T("Designation"), unicode, 0);
+			LocalFree(unicode);
+
+			// 0x07 Manufacturer
+			unicode = GetSmbiosString(header, *(cursor + 0x07));
+			node_att_set(node, _T("Manufacturer"), unicode, 0);
+			LocalFree(unicode);
+
+			// 0x10 Processor Version String
+			unicode = GetSmbiosString(header, *(cursor + 0x10));
+			node_att_set(node, _T("Version"), unicode, 0);
+			LocalFree(unicode);
+
+			// 0x14 Max Speed
+			swprintf(buffer, _T("%uMhz"), *((WORD *)(cursor + 0x14)));
+			node_att_set(node, _T("MaxSpeed"), buffer, 0);
+
+			// 0x16 Current Speed
+			swprintf(buffer, _T("%uMhz"), *((WORD *)(cursor + 0x16)));
+			node_att_set(node, _T("CurrentSpeed"), buffer, 0);
+
+			// v2.3+
+			if (2 < smbios->SMBIOSMajorVersion || (2 == smbios->SMBIOSMajorVersion && 3 <= smbios->SMBIOSMinorVersion)) {
+				// 0x20 Serial Number
+				unicode = GetSmbiosString(header, *(cursor + 0x20));
+				node_att_set(node, _T("SerialNumber"), unicode, 0);
+				LocalFree(unicode);
+
+				// 0x21 Asset Tag
+				unicode = GetSmbiosString(header, *(cursor + 0x21));
+				node_att_set(node, _T("AssetTag"), unicode, 0);
+				LocalFree(unicode);
+
+				// 0x22 Part Number
+				unicode = GetSmbiosString(header, *(cursor + 0x22));
+				node_att_set(node, _T("PartNumber"), unicode, 0);
+				LocalFree(unicode);
+			}
+		}
+	}
+
+	return procSocketsNode;
 }
