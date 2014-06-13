@@ -10,9 +10,12 @@
 #define SMB_TABLE_PROCESSOR			4
 #define SMB_TABLE_MEMCTRL			5
 #define SMB_TABLE_MEMMODULES		6
+#define SMB_TABLE_SLOTS				9
 #define SMB_TABLE_OEM_STRINGS		11
 #define SMB_TABLE_SYS_CFG_OPTIONS	12
 #define SMB_TABLE_END_OF_TABLE		127
+
+#define SAFE_INDEX(a, i)			a[ARRAYSIZE(a) > i ? i : 0]
 
 typedef unsigned long long QWORD;
 

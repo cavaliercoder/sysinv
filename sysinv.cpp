@@ -13,7 +13,7 @@ void print_usage(int ret);
 int main(int argc, CHAR* argv[])
 {
 	FILE *out = stdout;
-	PNODE root, agent, software, hardware, smbios, storage, configuration, node;
+	PNODE root, agent, software, hardware, storage, configuration, node;
 	DWORD format = OUT_LIST;
 	DWORD i = 0;
 	PARGLIST argList = parse_args(argc, argv);
@@ -89,8 +89,12 @@ int main(int argc, CHAR* argv[])
 		node_append_child(hardware, node);
 
 		// SMBIOS info
-		smbios = GetSmbiosDetail();
-		node_append_child(hardware, smbios);
+		node = GetSmbiosDetail();
+		node_append_child(hardware, node);
+
+		// OEM String
+		node = EnumOemStrings();
+		node_append_child(hardware, node);
 
 		// BIOS Info
 		node = GetBiosDetail();
@@ -102,6 +106,10 @@ int main(int argc, CHAR* argv[])
 
 		// Baseboards
 		node = EnumBaseboards();
+		node_append_child(hardware, node);
+		
+		// Baseboard slots
+		node = EnumSlots();
 		node_append_child(hardware, node);
 
 		// Processor Sockets

@@ -161,8 +161,8 @@ PNODE GetVolumeDetail(__in PNODE parent, __in LPTSTR volumeName)
 				extent = extents->Extents[i];
 				swprintf(buffer[0], L"%u", i);
 				swprintf(buffer[1], L"%u", extent.DiskNumber);
-				swprintf(buffer[2], L"0x%016lX", extent.StartingOffset.QuadPart);
-				swprintf(buffer[3], L"0x%016lX", extent.ExtentLength.QuadPart);
+				swprintf(buffer[2], L"0x%lX", extent.StartingOffset.QuadPart);
+				swprintf(buffer[3], L"0x%lX", extent.ExtentLength.QuadPart);
 			
 				extentNode = node_append_new(extentsNode, L"Extent", NODE_FLAG_TABLE_ENTRY);			
 				node_att_set(extentNode, L"Index", buffer[0], NODE_ATT_FLAG_KEY);

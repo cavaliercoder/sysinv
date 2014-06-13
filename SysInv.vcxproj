@@ -167,6 +167,7 @@
     <ClCompile Include="processors.cpp" />
     <ClCompile Include="diskinfo.cpp" />
     <ClCompile Include="os.cpp" />
+    <ClCompile Include="slots.cpp" />
     <ClCompile Include="smbios.cpp" />
     <ClCompile Include="sysinv.cpp" />
     <ClCompile Include="node.cpp" />

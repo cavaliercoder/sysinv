@@ -145,24 +145,39 @@ PNODE GetMemoryControllerDetail(PSMBIOS_STRUCT_HEADER header)
 }
 
 // Type 11
-PNODE GetOemStringsDetail(PSMBIOS_STRUCT_HEADER header)
+PNODE EnumOemStrings()
 {
-	DWORD i;
-	LPTSTR unicode = NULL;
-	TCHAR buffer[64];
-	POEM_STRINGS oemStrings = (POEM_STRINGS)header;
-	PNODE node = node_alloc(_T("OemStrings"), 0);
+	PNODE node = NULL;
 	PNODE stringNode = NULL;
 
-	for (i = 1; i < oemStrings->StringCount; i++) {
+	PRAW_SMBIOS_DATA smbios = GetSmbiosData();
+	PSMBIOS_STRUCT_HEADER header = NULL;
+	PBYTE cursor = NULL;
+
+	LPTSTR unicode = NULL;
+	TCHAR buffer[64];
+
+	DWORD i;
+
+	header = GetNextStructureOfType(header, SMB_TABLE_OEM_STRINGS);
+	if (NULL == header)
+		return node;
+
+	node = node_alloc(_T("OemStrings"), NODE_FLAG_TABLE);
+	cursor = (PBYTE)header;
+	
+	// 0x04 Count
+	for (i = 1; i < *(cursor + 0x04); i++) {
+		// String index
 		_snwprintf(buffer, 64, _T("%u"), i);
 		unicode = GetSmbiosString(header, i);
 
-		stringNode = node_append_new(node, _T("OemString"), 0);
+		// String value
+		stringNode = node_append_new(node, _T("OemString"), NODE_FLAG_TABLE_ENTRY);
 		node_att_set(stringNode, _T("Index"), buffer, 0);
 		node_att_set(stringNode, _T("Value"), unicode, 0);
 		LocalFree(unicode);
 	}
-
+	
 	return node;
 }

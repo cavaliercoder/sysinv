@@ -19,5 +19,7 @@ PNODE GetSmbiosDetail();
 PNODE GetBiosDetail();
 PNODE GetBiosSystemDetail();
 PNODE EnumBaseboards();
+PNODE EnumSlots();
 PNODE EnumChassis();
 PNODE EnumProcSockets();
+PNODE EnumOemStrings();

@@ -60,10 +60,7 @@ PNODE EnumChassis()
 			LocalFree(unicode);
 
 			// 0x05 Chassis Type
-			if (*(cursor + 0x05) < ARRAYSIZE(CHASSIS_TYPE_STRINGS))
-				node_att_set(node, _T("Type"), CHASSIS_TYPE_STRINGS[*(cursor + 0x05)], 0);
-			else
-				node_att_set(node, _T("Type"), CHASSIS_TYPE_STRINGS[0], 0);
+			node_att_set(node, _T("Type"), SAFE_INDEX(CHASSIS_TYPE_STRINGS, *(cursor + 0x05)), 0);
 
 			// 0x06 Version String
 			unicode = GetSmbiosString(header, *(cursor + 0x06));
