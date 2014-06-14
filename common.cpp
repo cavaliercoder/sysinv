@@ -8,12 +8,67 @@
 
 PERROR_MESSAGE *errorLog = NULL;
 
+int AppendMultiString(LPTSTR *lpmszMulti, LPCTSTR szNew)
+{
+	DWORD i = 0;
+	DWORD oldLength = 0;
+	DWORD newLength = 0;
+	DWORD newSzLength = 0;
+	DWORD newSize = 0;
+	DWORD count = 0;
+	LPTSTR mszMulti = NULL;
+	LPTSTR mszResult = NULL;
+	LPCTSTR c = NULL;
+
+	if (NULL == szNew)
+		return 0;
+
+	newSzLength = wcslen(szNew);
+
+	// Old multistring was empty
+	if (NULL == (*lpmszMulti)) {
+		newSize = sizeof(TCHAR) * (newSzLength + 2);
+		(*lpmszMulti) = (LPTSTR)LocalAlloc(LPTR, newSize);
+		memcpy((*lpmszMulti), szNew, sizeof(TCHAR) * newSzLength);
+		return 1;
+	}
+
+	mszMulti = *(lpmszMulti);
+
+	// Iterate chars in old multistring until double null-char is found
+	count = 1;
+	for (i = 0; !(('\0' == mszMulti[i]) && ('\0' == mszMulti[i + 1])); i++) {
+		if ('\0' == mszMulti[i]) {
+			count++;
+		}
+	}
+
+	oldLength = i;
+	newLength = oldLength + newSzLength;
+	newSize = sizeof(TCHAR) * (newLength + count + 2);
+
+	// Allocate memory
+	if (NULL == (mszResult = (LPTSTR)LocalAlloc(LPTR, newSize)))
+		return 0;
+
+	// Copy values
+	memcpy(mszResult, mszMulti, sizeof(TCHAR) * (oldLength + count));
+	memcpy(&mszResult[oldLength + count], szNew, sizeof(TCHAR) * (newSzLength));
+
+	// Release old pointer
+	LocalFree(mszMulti);
+
+	// Repoint
+	(*lpmszMulti) = mszResult;
+
+	return count + 1;
+}
+
 void _SetError(LPCTSTR filename, LPCTSTR function, DWORD line, DWORD level, DWORD systemErrorCode, LPCTSTR message, ...)
 {
 	va_list args;
 	PERROR_MESSAGE error = NULL;
 	TCHAR buffer[MAX_ERROR_LEN];
-	TCHAR filenameW[MAX_PATH + 1];
 	DWORD size;
 	LPTSTR cursor;
 
@@ -29,10 +84,10 @@ void _SetError(LPCTSTR filename, LPCTSTR function, DWORD line, DWORD level, DWOR
 	size = sizeof(ERROR_MESSAGE) + (sizeof(TCHAR) * (wcslen(buffer) + 1));
 	
 	if (NULL != filename)
-		size += sizeof(TCHAR)* wcslen(filename);
+		size += (DWORD) sizeof(TCHAR) * wcslen(filename);
 
 	if (NULL != function)
-		size += sizeof(TCHAR)* wcslen(function);
+		size += (DWORD) sizeof(TCHAR) * wcslen(function);
 
 	if (NULL == (error = (PERROR_MESSAGE)calloc(1, size))) {
 		fprintf(stderr, "Failed to allocate memory for error message\n");

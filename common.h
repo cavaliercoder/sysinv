@@ -25,6 +25,8 @@
 #define SetError(level, systemErrorCode, message, ...)	_SetError(NULL, __FUNCTIONW__, __LINE__, level, systemErrorCode, message, __VA_ARGS__)
 #endif
 
+#define CHECK_BIT(var,n)	((var) & (1 << (n)))
+
 typedef struct _ErrorMessage
 {
 	LPTSTR FileName;
@@ -38,5 +40,7 @@ typedef struct _ErrorMessage
 
 void _SetError(LPCTSTR filename, LPCTSTR function, DWORD line, DWORD level, DWORD systemErrorCode, LPCTSTR message, ...);
 PNODE EnumErrorLog();
+
+int AppendMultiString(LPTSTR *lpmszMulti, LPCTSTR szNew);
 
 #endif

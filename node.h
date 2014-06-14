@@ -59,20 +59,20 @@ typedef struct _NODE_ATT_LINK {
 
 void fprintcx(FILE *file, const LPTSTR s, int count);
 
-PNODE node_alloc(const LPTSTR name, int flags);
+PNODE node_alloc(const LPCTSTR name, int flags);
 void node_free(PNODE node, int deep);
 
 int node_path(PNODE node, LPTSTR buffer, DWORD *bufferlen);
 int node_depth(PNODE node);
 int node_child_count(PNODE node);
 int node_append_child(PNODE parent, PNODE child);
-PNODE node_append_new(PNODE parent, const LPTSTR name, int flags);
+PNODE node_append_new(PNODE parent, const LPCTSTR name, int flags);
 
 int node_att_count(PNODE node);
-int node_att_indexof(PNODE node, const LPTSTR key);
-PNODE_ATT node_att_set(PNODE node, const LPTSTR key, const LPTSTR value, int flags);
-PNODE_ATT node_att_set_multi(PNODE node, const LPTSTR key, const LPTSTR value, int flags);
-LPTSTR node_att_get(PNODE node, const LPTSTR key);
+int node_att_indexof(PNODE node, const LPCTSTR key);
+PNODE_ATT node_att_set(PNODE node, const LPCTSTR key, const LPCTSTR value, int flags);
+PNODE_ATT node_att_set_multi(PNODE node, const LPCTSTR key, const LPCTSTR value, int flags);
+LPTSTR node_att_get(PNODE node, const LPCTSTR key);
 
 int node_to_list(PNODE node, FILE *file, int flags);
 int node_to_xml(PNODE node, FILE *file, int flags);

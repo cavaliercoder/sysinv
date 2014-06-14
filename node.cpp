@@ -1,13 +1,13 @@
 #include "stdafx.h"
 #include "node.h"
 
-PNODE_ATT node_alloc_att(const LPTSTR key, const LPTSTR value, int flags);
-PNODE_ATT node_alloc_att_multi(const LPTSTR key, const LPTSTR value, int flags);
+PNODE_ATT node_alloc_att(LPCTSTR key, LPCTSTR value, int flags);
+PNODE_ATT node_alloc_att_multi(LPCTSTR key, LPCTSTR value, int flags);
 
 int indent_depth = 0;
-int xml_escape_content(LPTSTR input, LPTSTR buffer, DWORD bufferSize);
+int xml_escape_content(LPCTSTR input, LPTSTR buffer, DWORD bufferSize);
 
-PNODE node_alloc(const LPTSTR name, int flags)
+PNODE node_alloc(LPCTSTR name, int flags)
 {
 	PNODE node = NULL;
 	int size;
@@ -196,7 +196,7 @@ int node_append_child(PNODE parent, PNODE child)
 	return new_count;
 }
 
-PNODE node_append_new(PNODE parent, const LPTSTR name, int flags)
+PNODE node_append_new(PNODE parent, const LPCTSTR name, int flags)
 {
 	PNODE node = node_alloc(name, flags);
 	node_append_child(parent, node);
@@ -204,7 +204,7 @@ PNODE node_append_new(PNODE parent, const LPTSTR name, int flags)
 	return node;
 }
 
-PNODE_ATT node_alloc_att(const LPTSTR key, const LPTSTR value, int flags)
+PNODE_ATT node_alloc_att(const LPCTSTR key, const LPCTSTR value, int flags)
 {
 	PNODE_ATT att = NULL;
 	LPTSTR nvalue = NULL;
@@ -213,7 +213,7 @@ PNODE_ATT node_alloc_att(const LPTSTR key, const LPTSTR value, int flags)
 	if (NULL == key)
 		return att;
 
-	nvalue = (NULL == value) ? wcsdup(_T("")) : value;
+	nvalue = (NULL == value) ? wcsdup(_T("")) : (LPTSTR) value;
 
 	size = sizeof(NODE_ATT)
 		+ (sizeof(TCHAR) * (wcslen(key) + 1))
@@ -232,7 +232,7 @@ PNODE_ATT node_alloc_att(const LPTSTR key, const LPTSTR value, int flags)
 	return att;
 }
 
-PNODE_ATT node_alloc_att_multi(const LPTSTR key, const LPTSTR value, int flags)
+PNODE_ATT node_alloc_att_multi(LPCTSTR key, LPCTSTR value, int flags)
 {
 	PNODE_ATT att = NULL;
 	int size;
@@ -240,7 +240,7 @@ PNODE_ATT node_alloc_att_multi(const LPTSTR key, const LPTSTR value, int flags)
 	LPTSTR c;
 
 	// Calculate size of value
-	for(c = &value[0]; '\0' != *c; c += wcslen(c) + 2)
+	for(c = (LPTSTR) &value[0]; '\0' != *c; c += wcslen(c) + 2)
 	{}
 	vallen = c - value;
 
@@ -273,7 +273,7 @@ int node_att_count(PNODE node)
 	return count;
 }
 
-int node_att_indexof(PNODE node, const LPTSTR key) 
+int node_att_indexof(PNODE node, const LPCTSTR key) 
 {
 	int i;
 
@@ -286,13 +286,13 @@ int node_att_indexof(PNODE node, const LPTSTR key)
 	return -1;
 }
 
-LPTSTR node_att_get(PNODE node, const LPTSTR key)
+LPTSTR node_att_get(PNODE node, const LPCTSTR key)
 {
 	int i = node_att_indexof(node, key);
 	return (i < 0) ? NULL : node->Attributes[i].LinkedAttribute->Value;
 }
 
-PNODE_ATT node_att_set(PNODE node, const LPTSTR key, const LPTSTR value, int flags) 
+PNODE_ATT node_att_set(PNODE node, const LPCTSTR key, const LPCTSTR value, int flags) 
 {
 	int i, old_count, new_count, new_index;
 	PNODE_ATT att;
@@ -348,7 +348,7 @@ PNODE_ATT node_att_set(PNODE node, const LPTSTR key, const LPTSTR value, int fla
 }
 
 
-PNODE_ATT node_att_set_multi(PNODE node, const LPTSTR key, const LPTSTR value, int flags)
+PNODE_ATT node_att_set_multi(PNODE node, LPCTSTR key, LPCTSTR value, int flags)
 {
 	int i, old_count, new_count, new_index;
 	PNODE_ATT att;
@@ -578,11 +578,11 @@ int node_to_xml(PNODE node, FILE *file, int flags)
 	return nodes;
 }
 
-int xml_escape_content(LPTSTR input, LPTSTR buffer, DWORD bufferSize)
+int xml_escape_content(LPCTSTR input, LPTSTR buffer, DWORD bufferSize)
 {
 	DWORD i = 0;
-	TCHAR *cIn = input;
-	TCHAR *cOut = buffer;
+	LPCTSTR cIn = input;
+	LPTSTR cOut = buffer;
 	DWORD newBufferSize = 0;
 
 	while('\0' != (*cIn)) {
