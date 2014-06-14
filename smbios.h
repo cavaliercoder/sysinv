@@ -47,6 +47,7 @@ void ReleaseSmbiosData();
 
 PSMBIOS_STRUCT_HEADER GetNextStructure(PSMBIOS_STRUCT_HEADER previous);
 PSMBIOS_STRUCT_HEADER GetNextStructureOfType(PSMBIOS_STRUCT_HEADER previous, DWORD type);
+PSMBIOS_STRUCT_HEADER GetStructureByHandle(WORD handle);
 
 LPTSTR GetSmbiosString(PSMBIOS_STRUCT_HEADER table, BYTE index);
 

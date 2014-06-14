@@ -16,6 +16,7 @@ LPCTSTR PROC_TYPES[] = {
 	_T("Video")							// 0x06 Video Processor
 };
 
+// 7.5.2 Processor Information — Processor Family 
 PROCESSOR_FAMILY PROCESSOR_FAMILIES[] = {
 		{ 0x01, _T("Other") },	// 1
 		{ 0x02, _T("Unknown") },	// 2
@@ -281,6 +282,9 @@ LPCTSTR PROCESSOR_CHARACTERISTICS[] = {
 	_T("Power/Performance Control")		// Bit 7
 };
 
+/*
+ * See: http://msdn.microsoft.com/en-us/library/hskdteyh(VS.80).aspx
+ */
 PNODE EnumProcessors()
 {
 	int cpuinfo[4];

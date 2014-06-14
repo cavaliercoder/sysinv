@@ -86,6 +86,17 @@ PSMBIOS_STRUCT_HEADER GetNextStructureOfType(PSMBIOS_STRUCT_HEADER previous, DWO
 	return NULL;
 }
 
+PSMBIOS_STRUCT_HEADER GetStructureByHandle(WORD handle)
+{
+	PSMBIOS_STRUCT_HEADER header = NULL;
+
+	while (NULL != GetNextStructure(header))
+		if (handle == header->Handle)
+			return header;
+
+	return NULL;
+}
+
 LPTSTR GetSmbiosString(PSMBIOS_STRUCT_HEADER table, BYTE index)
 {
 	DWORD i = 0;
