@@ -546,23 +546,34 @@ int node_to_xml(PNODE node, FILE *file, int flags)
 			v = 0;
 			key = node->Attributes[i].LinkedAttribute->Key;
 			val = node->Attributes[i].LinkedAttribute->Value;
-			while('\0' != *val) {
-				// XML Escape value
-				xml_escape_content(val, strBuffer, MAX_PATH + 1);
-				
-				fprintcx(file, NODE_XML_DELIM_INDENT, indent + 1);
-				
-				if(0 == (NODE_ATT_FLAG_ARRAY & node->Attributes[i].LinkedAttribute->Flags)) {
-					fwprintf(file, L"<%s>%s</%s>%s", key, strBuffer, key, nl);
 
-					// Break loop if attribute is not an array
-					break;
-				}			
-				fwprintf(file, L"<%s Index=\"%u\">%s</%s>%s", key, v, strBuffer, key, nl);
-			
-				// Move cursor to next string
-				val += wcslen(val) + 1;
-				v++;
+			// XML Escape value
+			xml_escape_content(val, strBuffer, MAX_PATH + 1);
+
+			fprintcx(file, NODE_XML_DELIM_INDENT, indent + 1);
+
+
+			// Print non-array
+			if (0 == (NODE_ATT_FLAG_ARRAY & node->Attributes[i].LinkedAttribute->Flags)) {
+				fwprintf(file, L"<%s>%s</%s>%s", key, strBuffer, key, nl);
+			}
+
+			else {
+				// Print array
+				fwprintf(file, L"<%s>%s", key, nl);
+				while ('\0' != *val) {
+					xml_escape_content(val, strBuffer, MAX_PATH + 1);
+
+					fprintcx(file, NODE_XML_DELIM_INDENT, indent + 2);
+					fwprintf(file, L"<Item Id=\"%u\">%s</Item>%s", v, strBuffer, nl);
+
+					// Move cursor to next string
+					val += wcslen(val) + 1;
+					v++;
+				}
+
+				fprintcx(file, NODE_XML_DELIM_INDENT, indent + 1);
+				fwprintf(file, L"</%s>%s", key, nl);
 			}
 		}
 	}

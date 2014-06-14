@@ -17,6 +17,11 @@
 #define SMB_TABLE_MEM_DEVICE		17
 #define SMB_TABLE_END_OF_TABLE		127
 
+#define EAX							0
+#define EBX							1
+#define ECX							2
+#define EDX							3
+
 typedef unsigned long long QWORD;
 
 /*
@@ -39,6 +44,19 @@ typedef struct _SmbiosStructHeader
 	WORD Handle;
 } SMBIOS_STRUCT_HEADER, *PSMBIOS_STRUCT_HEADER;
 
+typedef struct _ProcessorFamily
+{
+	WORD Index;
+	LPCTSTR Name;
+} PROCESSOR_FAMILY, *PPROCESSOR_FAMILY;
+
+typedef struct _ProcessorFeature
+{
+	WORD BitNumber;
+	LPCTSTR Code;
+	LPCTSTR Description;
+} PROCESSOR_FEATURE, *PPROCESSOR_FEATURE;
+
 /*
  * Functions
  */
@@ -51,9 +69,4 @@ PSMBIOS_STRUCT_HEADER GetStructureByHandle(WORD handle);
 
 LPTSTR GetSmbiosString(PSMBIOS_STRUCT_HEADER table, BYTE index);
 
-typedef struct _ProcessorFamily
-{
-	WORD Index;
-	LPCTSTR Name;
-} PROCESSOR_FAMILY, *PPROCESSOR_FAMILY;
 #endif

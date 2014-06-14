@@ -35,7 +35,7 @@ SysInv currently sources the following system information:
 
 * Fast and lightweight
 
-* Support for Windows XP/2003 and above on x86 systems
+* Support for Windows XP/2003 and above on x86 and x64 systems
 
 * Native C++ binary. No dependencies
 

@@ -282,8 +282,82 @@ LPCTSTR PROCESSOR_CHARACTERISTICS[] = {
 	_T("Power/Performance Control")		// Bit 7
 };
 
+// Intel Table 3-20
+PROCESSOR_FEATURE PROC_FEATURES_ECX[] = {
+		{ 0, _T("SSE3"), _T("Streaming SIMD Extensions 3 ") },
+		{ 1, _T("PCLMULQDQ"), _T("PCLMULQDQ instruction") },
+		{ 2, _T("DTES64 "), _T("64-bit DS Area") },
+		{ 3, _T("MONITOR "), _T("MONITOR/MWAIT") },
+		{ 4, _T("DS-CPL"), _T("CPL Qualified Debug Store") },
+		{ 5, _T("VMX"), _T("Virtual Machine Extensions") },
+		{ 6, _T("SMX"), _T("Safer Mode Extensions") },
+		{ 7, _T("EIST"), _T("Enhanced Intel SpeedStep® technology") },
+		{ 8, _T("TM2"), _T("Thermal Monitor 2") },
+		{ 9, _T("SSSE3"), _T("Supplemental Streaming SIMD Extensions 3") },
+		{ 10, _T("CNXT-ID"), _T("L1 Context ID") },
+		{ 11, _T("SDBG"), _T("IA32_DEBUG_INTERFACE MSR for silicon debug") },
+		{ 12, _T("FMA"), _T("FMA extensions using YMM state") },
+		{ 13, _T("CMPXCHG16B"), _T("CMPXCHG16B Available") },
+		{ 14, _T("xTPR"), _T("xTPR Update Control") },
+		{ 15, _T("PDCM"), _T("Perfmon and Debug Capability") },
+		{ 17, _T("PCID"), _T("Process-context identifiers") },
+		{ 18, _T("DCA"), _T("Prefetch data from a memory mapped device") },
+		{ 19, _T("SSE4.1"), _T("SSE4.1") },
+		{ 20, _T("SSE4.2"), _T("SSE4.2") },
+		{ 21, _T("x2APIC"), _T("x2APIC feature") },
+		{ 22, _T("MOVBE"), _T("MOVBE instruction") },
+		{ 23, _T("POPCNT"), _T("POPCNT instruction") },
+		{ 24, _T("TSC-Deadline"), _T("APIC timer supports one-shot operation using a TSC deadline value") },
+		{ 25, _T("AESNI"), _T("AESNI instruction extensions") },
+		{ 26, _T("XSAVE"), _T("XSAVE/XRSTOR processor extended states feature, XSETBV/XGETBV instructions, and XCR0") },
+		{ 27, _T("OSXSAVE"), _T("OS has set CR4.OSXSAVE[bit 18] to enable the XSAVE feature set") },
+		{ 28, _T("AVX"), _T("AVX instruction extensions") },
+		{ 29, _T("F16C"), _T("16-bit floating-point conversion instructions") },
+		{ 30, _T("RDRAND"), _T("RDRAND instruction") }
+};
+
+// Intel Table 3-21
+PROCESSOR_FEATURE PROC_FEATURES_EDX[] = {
+		{ 0, _T("FPU"), _T("x87 FPU on Chip") },
+		{ 1, _T("VME"), _T("Virtual-8086 Mode Enhancement") },
+		{ 2, _T("DE"), _T("Debugging Extensions") },
+		{ 3, _T("PSE"), _T("Page Size Extensions") },
+		{ 4, _T("TSC"), _T("Time Stamp Counter") },
+		{ 5, _T("MSR"), _T("RDMSR and WRMSR Support") },
+		{ 6, _T("PAE"), _T("Physical Address Extensions") },
+		{ 7, _T("MCE"), _T("Machine Check Exception") },
+		{ 8, _T("CX8"), _T("CMPXCHG8B Inst.") },
+		{ 9, _T("APIC"), _T("APIC on Chip") },
+		{ 11, _T("SEP"), _T("SYSENTER and SYSEXIT") },
+		{ 12, _T("MTRR"), _T("Memory Type Range Registers") },
+		{ 13, _T("PGE"), _T("PTE Global Bit") },
+		{ 14, _T("MCA"), _T("Machine Check Architecture") },
+		{ 15, _T("CMOV"), _T("Conditional Move/Compare Instruction") },
+		{ 16, _T("PAT"), _T("Page Attribute Table") },
+		{ 17, _T("PSE"), _T("Page Size Extension") },
+		{ 18, _T("PSN"), _T("Processor Serial Number") },
+		{ 19, _T("CLFSH"), _T("CFLUSH Instruction") },
+		{ 21, _T("DS"), _T("Debug Store") },
+		{ 22, _T("ACPI"), _T("Thermal Monitor and Clock Ctrl") },
+		{ 23, _T("MMX"), _T("MMX Technology") },
+		{ 24, _T("FXSR"), _T("FXSAVE/FXRSTOR") },
+		{ 25, _T("SSE"), _T("SSE Extensions") },
+		{ 26, _T("SSE2"), _T("SSE2 Extensions") },
+		{ 27, _T("SS"), _T("Self Snoop") },
+		{ 28, _T("HTT"), _T("Hyper-threading technology") },
+		{ 29, _T("TM"), _T("Thermal Monitor") },
+		{ 31, _T("PBE"), _T("Pend. Brk. En.") }
+};
+
 /*
- * See: http://msdn.microsoft.com/en-us/library/hskdteyh(VS.80).aspx
+ * Microsoft Specification:
+ * http://msdn.microsoft.com/en-us/library/hskdteyh(VS.80).aspx
+ *
+ * Intel specification (Chapter 3-157, Table 3-17):
+ * http://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-vol-2a-manual.pdf
+ *
+ * AMD Specification:
+ * http://developer.amd.com/wordpress/media/2012/10/254811.pdf
  */
 PNODE EnumProcessors()
 {
@@ -292,42 +366,74 @@ PNODE EnumProcessors()
 	int nExIds;
 	char buffer[BUFLEN];
 	TCHAR strBuffer[BUFLEN];
-	PNODE node = node_alloc(L"Processors", NODE_FLAG_TABLE);
+	LPTSTR unicode = NULL;
+	PNODE cpuNode = node_alloc(L"Processors", NODE_FLAG_TABLE);
+	PNODE featuresNode = node_append_new(cpuNode, _T("Features"), NODE_FLAG_TABLE);
+	PNODE node = NULL;
 
-	// Get cpu manufacturor
+	// Get cpu manufacturor (EAX = 0)
 	__cpuid(cpuinfo, 0);
 	memset(buffer, 0, BUFLEN);
-	memcpy(&buffer[0], &cpuinfo[1], 4);
-	memcpy(&buffer[4], &cpuinfo[3], 4);
-	memcpy(&buffer[8], &cpuinfo[2], 4);
+	memcpy(&buffer[0], &cpuinfo[EBX], 4);
+	memcpy(&buffer[4], &cpuinfo[EDX], 4);
+	memcpy(&buffer[8], &cpuinfo[ECX], 4);
 	MultiByteToWideChar(CP_UTF8, 0, buffer, -1, strBuffer, BUFLEN);
-	node_att_set(node, L"Manufacturer", strBuffer, 0);
+	node_att_set(cpuNode, L"Manufacturer", strBuffer, 0);
 
-
-	// Get model info
+	// Get model info (EAX = 1)
 	__cpuid(cpuinfo, 1);
-	swprintf(strBuffer, L"%u", (cpuinfo[0] & 0xF));
-	node_att_set(node, L"Stepping", strBuffer, 0);
+	
+	// EAX
+	swprintf(strBuffer, L"%u", (cpuinfo[EAX] & 0xF));
+	node_att_set(cpuNode, L"Stepping", strBuffer, 0);
 
-	swprintf(strBuffer, L"%u", (cpuinfo[0] >> 4 )& 0xF);
-	node_att_set(node, L"Model", strBuffer, 0);
+	swprintf(strBuffer, L"%u", (cpuinfo[EAX] >> 4 )& 0xF);
+	node_att_set(cpuNode, L"Model", strBuffer, 0);
 
-	swprintf(strBuffer, L"%u", (cpuinfo[0]  >> 8) & 0xF);
-	node_att_set(node, L"Family", strBuffer, 0);
+	swprintf(strBuffer, L"%u", (cpuinfo[EAX]  >> 8) & 0xF);
+	node_att_set(cpuNode, L"Family", strBuffer, 0);
 
-	swprintf(strBuffer, L"%u", (cpuinfo[0]  >> 12) & 0xF);
-	node_att_set(node, L"Type", strBuffer, 0);
+	swprintf(strBuffer, L"%u", (cpuinfo[EAX]  >> 12) & 0xF);
+	node_att_set(cpuNode, L"Type", strBuffer, 0);
 
-	swprintf(strBuffer, L"%u", (cpuinfo[0]  >> 16) & 0xF);
-	node_att_set(node, L"ExtendedModel", strBuffer, 0);
+	swprintf(strBuffer, L"%u", (cpuinfo[EAX]  >> 16) & 0xF);
+	node_att_set(cpuNode, L"ExtendedModel", strBuffer, 0);
 
-	swprintf(strBuffer, L"%u", (cpuinfo[0]  >> 20) & 0xFF);
-	node_att_set(node, L"ExtendedFamily", strBuffer, 0);
+	swprintf(strBuffer, L"%u", (cpuinfo[EAX]  >> 20) & 0xFF);
+	node_att_set(cpuNode, L"ExtendedFamily", strBuffer, 0);
+
+	// EBX
+	swprintf(strBuffer, _T("%u"), cpuinfo[EBX] & 0x7F);
+	node_att_set(cpuNode, _T("BrandIndex"), strBuffer, 0);
+
+	swprintf(strBuffer, _T("%u"), 8 * ((cpuinfo[EBX] >> 8) & 0x7F));
+	node_att_set(cpuNode, _T("CacheLineSize"), strBuffer, 0);
+
+	swprintf(strBuffer, _T("%u"), (cpuinfo[EBX] >> 24) & 0x7F);
+	node_att_set(cpuNode, _T("ApicPhysicalId"), strBuffer, 0);
+
+	// ECX Feature Info (Intel table 3-21)
+	for (i = 0; i < ARRAYSIZE(PROC_FEATURES_ECX); i++) {
+		if (CHECK_BIT(cpuinfo[ECX], PROC_FEATURES_ECX[i].BitNumber)) {
+			node = node_append_new(featuresNode, _T("Feature"), NODE_FLAG_TABLE_ENTRY);
+			node_att_set(node, _T("Feature"), PROC_FEATURES_ECX[i].Code, NODE_ATT_FLAG_KEY);
+			node_att_set(node, _T("Description"), PROC_FEATURES_ECX[i].Description, 0);
+		}
+	}
+
+	// EDX Extended Feature info (Intel table 3-21)
+	for (i = 0; i < ARRAYSIZE(PROC_FEATURES_EDX); i++) {
+		if (CHECK_BIT(cpuinfo[EDX], PROC_FEATURES_EDX[i].BitNumber)) {
+			node = node_append_new(featuresNode, _T("Feature"), NODE_FLAG_TABLE_ENTRY);
+			node_att_set(node, _T("Feature"), PROC_FEATURES_EDX[i].Code, NODE_ATT_FLAG_KEY);
+			node_att_set(node, _T("Description"), PROC_FEATURES_EDX[i].Description, 0);
+		}	
+	}
 
 	// Get CPU Brand String
 	memset(buffer, 0, BUFLEN);
 	__cpuid(cpuinfo, 0x80000000);
-	nExIds = cpuinfo[0];
+	nExIds = cpuinfo[EAX];
 	for(i = 0x80000000; i < nExIds; i++) {
 		__cpuid(cpuinfo, i);
 		switch(i) {
@@ -345,9 +451,9 @@ PNODE EnumProcessors()
 		}
 	}
 	MultiByteToWideChar(CP_UTF8, 0, buffer, -1, strBuffer, BUFLEN);
-	node_att_set(node, L"BrandString", strBuffer, 0);
+	node_att_set(cpuNode, L"BrandString", strBuffer, 0);
 
-	return node;
+	return cpuNode;
 }
 
 // SMBIOS Table Type 4
