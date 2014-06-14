@@ -50,22 +50,9 @@ PSMBIOS_STRUCT_HEADER GetNextStructureOfType(PSMBIOS_STRUCT_HEADER previous, DWO
 
 LPTSTR GetSmbiosString(PSMBIOS_STRUCT_HEADER table, BYTE index);
 
-typedef struct _MemoryController
+typedef struct _ProcessorFamily
 {
-	/* v2.0+ */
-	SMBIOS_STRUCT_HEADER Header;
-	BYTE ErrorDetectionMethod;
-	BYTE ErrorCorrectingCapability;
-	BYTE SupportedInterleave;
-	BYTE CurrentInterleave;
-	BYTE MaximumModuleSize;
-	WORD SupportedSpeeds;
-	WORD SupportedMemoryTypes;
-	BYTE ModuleVoltage;
-	BYTE AssociatedSlots;
-	BYTE ModuleConfigHandles; // Variable length
-	/* v2.1+ */
-	// BYTE EnabledErrorCorrectionCapabilities;
-} MEMORY_CONTROLLER, *PMEMORY_CONTROLLER;
-
+	WORD Index;
+	LPCTSTR Name;
+} PROCESSOR_FAMILY, *PPROCESSOR_FAMILY;
 #endif
