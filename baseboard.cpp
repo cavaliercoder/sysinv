@@ -2,6 +2,33 @@
 #include "sysinv.h"
 #include "smbios.h"
 
+// 7.3.1 Baseboard — feature flags
+LPCTSTR BOARD_FEATURES[] = {
+	_T("Hosting board"),					// Bit 0
+	_T("Requires daughter board"),			// Bit 1
+	_T("Removable"),						// Bit 2
+	_T("Replaceable"),						// Bit 3
+	_T("Hot swappable")						// Bit 4
+};
+
+// 7.3.2 Baseboard — Board Type
+LPCTSTR BOARD_TYPE[] = {
+	_T("Invalid"),							// 0x00 Invalid
+	_T("Unknown"),							// 0x01 Unknown
+	_T("Other"),							// 0x02 Other
+	_T("Server Blade"),						// 0x03 Server Blade
+	_T("Connectivity Switch"),				// 0x04 Connectivity Switch
+	_T("System Management Module"),			// 0x05 System Management Module
+	_T("Processor Module"),					// 0x06 Processor Module
+	_T("I/O Module"),						// 0x07 I / O Module
+	_T("Memory Module"),					// 0x08 Memory Module
+	_T("Daughter board"),					// 0x09 Daughter board
+	_T("Motherboard"),						// 0x0A Motherboard
+	_T("Processor/Memory Module"),			// 0x0B Processor / Memory Module
+	_T("Processor/IO Module"),				// 0x0C Processor / IO Module
+	_T("Interconnect board")				// 0x0D Interconnect board
+};
+
 // Baseboard Table Type 2
 PNODE EnumBaseboards()
 {
@@ -14,6 +41,7 @@ PNODE EnumBaseboards()
 
 	LPTSTR unicode = NULL;
 	TCHAR buffer[MAX_PATH + 1];
+	DWORD i = 0;
 
 	while (NULL != (header = GetNextStructureOfType(header, SMB_TABLE_BASEBOARD))) {
 		cursor = (PBYTE)header;
@@ -23,77 +51,47 @@ PNODE EnumBaseboards()
 			node = node_append_new(baseBoardsNode, _T("BaseBoard"), 0);
 
 			// 0x04 Manufacturer
-			unicode = GetSmbiosString(header, *(cursor + 0x04));
+			unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x04));
 			node_att_set(node, _T("Manufacturer"), unicode, 0);
 			LocalFree(unicode);
 
 			// 0x05 Product
-			unicode = GetSmbiosString(header, *(cursor + 0x05));
+			unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x05));
 			node_att_set(node, _T("Product"), unicode, 0);
 			LocalFree(unicode);
 
 			// 0x06 Version String
-			unicode = GetSmbiosString(header, *(cursor + 0x06));
+			unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x06));
 			node_att_set(node, _T("Version"), unicode, 0);
 			LocalFree(unicode);
 
 			// 0x07 Serial Number
-			unicode = GetSmbiosString(header, *(cursor + 0x07));
+			unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x07));
 			node_att_set(node, _T("SerialNumber"), unicode, 0);
 			LocalFree(unicode);
 
 			// 0x08 Asset Tag
-			unicode = GetSmbiosString(header, *(cursor + 0x08));
+			unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x08));
 			node_att_set(node, _T("AssetTag"), unicode, 0);
 			LocalFree(unicode);
 
-			// 0x0A Location in Chassis
-			unicode = GetSmbiosString(header, *(cursor + 0x0A));
-			node_att_set(node, _T("Location"), unicode, 0);
+			// 0x09 Feature flags
+			unicode = NULL;
+			for (i = 0; i < ARRAYSIZE(BOARD_FEATURES); i++) {
+				if (CHECK_BIT(BYTE_AT_OFFSET(header, 0x09), i)) {
+					AppendMultiString(&unicode, BOARD_FEATURES[i]);
+				}
+			}
+			node_att_set_multi(node, _T("Features"), unicode, 0);
 			LocalFree(unicode);
 
+			// 0x0A Location in Chassis
+			unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x0A));
+			node_att_set(node, _T("Location"), unicode, 0);
+			LocalFree(unicode);
+			
 			// 0x0D Board Type
-			switch (*(cursor + 0x0D)) {
-			case 0x02:
-				node_att_set(node, _T("Type"), _T("Other"), 0);
-				break;
-			case 0x03:
-				node_att_set(node, _T("Type"), _T("Server Blade"), 0);
-				break;
-			case 0x04:
-				node_att_set(node, _T("Type"), _T("Connectivity Switch"), 0);
-				break;
-			case 0x05:
-				node_att_set(node, _T("Type"), _T("Server Management Module"), 0);
-				break;
-			case 0x06:
-				node_att_set(node, _T("Type"), _T("Processor Module"), 0);
-				break;
-			case 0x07:
-				node_att_set(node, _T("Type"), _T("I/O Module"), 0);
-				break;
-			case 0x08:
-				node_att_set(node, _T("Type"), _T("Memory Module"), 0);
-				break;
-			case 0x09:
-				node_att_set(node, _T("Type"), _T("Daughter Board"), 0);
-				break;
-			case 0x0A:
-				node_att_set(node, _T("Type"), _T("Motherboard"), 0);
-				break;
-			case 0x0B:
-				node_att_set(node, _T("Type"), _T("Processor/Memory Module"), 0);
-				break;
-			case 0x0C:
-				node_att_set(node, _T("Type"), _T("Processor/IO Module"), 0);
-				break;
-			case 0x0D:
-				node_att_set(node, _T("Type"), _T("Interconnect board"), 0);
-				break;
-			default:
-				node_att_set(node, _T("Type"), _T("Unknown"), 0);
-				break;
-			}
+			node_att_set(node, _T("Type"), SAFE_INDEX(BOARD_TYPE, BYTE_AT_OFFSET(header, 0x0D)), 0);
 		}
 	}
 

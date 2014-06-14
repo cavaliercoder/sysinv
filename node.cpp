@@ -240,9 +240,15 @@ PNODE_ATT node_alloc_att_multi(LPCTSTR key, LPCTSTR value, int flags)
 	LPTSTR c;
 
 	// Calculate size of value
-	for(c = (LPTSTR) &value[0]; '\0' != *c; c += wcslen(c) + 2)
-	{}
-	vallen = c - value;
+	if (NULL == value) {
+		vallen = 0;
+	}
+
+	else {
+		for (c = (LPTSTR)&value[0]; '\0' != *c; c += wcslen(c) + 2)
+		{ }
+		vallen = c - value;
+	}
 
 	size = sizeof(NODE_ATT)
 		+ (sizeof(TCHAR) * (wcslen(key) + 1))
@@ -254,7 +260,8 @@ PNODE_ATT node_alloc_att_multi(LPCTSTR key, LPCTSTR value, int flags)
 	wcscpy(att->Key, key);
 
 	att->Value = att->Key + wcslen(key) + 1;
-	memcpy(att->Value, value, sizeof(TCHAR) * (vallen + 1));
+	if (NULL != value)
+		memcpy(att->Value, value, sizeof(TCHAR) * (vallen + 1));
 
 	att->Flags = flags | NODE_ATT_FLAG_ARRAY;
 
@@ -355,12 +362,12 @@ PNODE_ATT node_att_set_multi(PNODE node, LPCTSTR key, LPCTSTR value, int flags)
 	PNODE_ATT_LINK link = NULL;
 	PNODE_ATT_LINK new_link = NULL;
 	PNODE_ATT_LINK new_links = NULL;
+	LPTSTR temp = NULL;
 
-	
 	// Create new attribute
 	att = node_alloc_att_multi(key, value, flags);
 
-	// Count old attributes
+		// Count old attributes
 	old_count = node_att_count(node);
 
 	// Search for existing attribute

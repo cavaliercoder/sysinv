@@ -122,10 +122,14 @@ PNODE GetBiosSystemDetail()
 		// v2.4+
 		if (2 < smbios->SMBIOSMajorVersion || (2 == smbios->SMBIOSMajorVersion && 4 <= smbios->SMBIOSMinorVersion)) {
 			// 0x19 SKU Number
-			node_att_set(node, _T("SkuNumber"), GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x19)), 0);
+			unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x19));
+			node_att_set(node, _T("SkuNumber"), unicode, 0);
+			LocalFree(unicode);
 
 			// 0x1A SKU Number
-			node_att_set(node, _T("Family"), GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x1A)), 0);
+			unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x1A));
+			node_att_set(node, _T("Family"), unicode, 0);
+			LocalFree(unicode);
 		}
 	}
 
