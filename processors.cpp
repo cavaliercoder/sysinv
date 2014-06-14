@@ -355,6 +355,7 @@ PROCESSOR_FEATURE PROC_FEATURES_EDX[] = {
  *
  * Intel specification (Chapter 3-157, Table 3-17):
  * http://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-vol-2a-manual.pdf
+ * https://software.intel.com/en-us/articles/intel-architecture-and-processor-identification-with-cpuid-model-and-family-numbers
  *
  * AMD Specification:
  * http://developer.amd.com/wordpress/media/2012/10/254811.pdf
@@ -371,8 +372,11 @@ PNODE EnumProcessors()
 	PNODE featuresNode = node_append_new(cpuNode, _T("Features"), NODE_FLAG_TABLE);
 	PNODE node = NULL;
 
+	DWORD dwBuffer = NULL;
+	DWORD dwBuffer2 = NULL;
+
 	// Get cpu manufacturor (EAX = 0)
-	__cpuid(cpuinfo, 0);
+	__cpuid(cpuinfo, 0x00);
 	memset(buffer, 0, BUFLEN);
 	memcpy(&buffer[0], &cpuinfo[EBX], 4);
 	memcpy(&buffer[4], &cpuinfo[EDX], 4);
@@ -380,32 +384,32 @@ PNODE EnumProcessors()
 	MultiByteToWideChar(CP_UTF8, 0, buffer, -1, strBuffer, BUFLEN);
 	node_att_set(cpuNode, L"Manufacturer", strBuffer, 0);
 
-	// Get model info (EAX = 1)
-	__cpuid(cpuinfo, 1);
+	__cpuid(cpuinfo, 0x01);
 	
-	// EAX
+	// EAX (Intel figure 3-5)
 	swprintf(strBuffer, L"%u", (cpuinfo[EAX] & 0xF));
 	node_att_set(cpuNode, L"Stepping", strBuffer, 0);
-
-	swprintf(strBuffer, L"%u", (cpuinfo[EAX] >> 4 )& 0xF);
-	node_att_set(cpuNode, L"Model", strBuffer, 0);
-
-	swprintf(strBuffer, L"%u", (cpuinfo[EAX]  >> 8) & 0xF);
-	node_att_set(cpuNode, L"Family", strBuffer, 0);
 
 	swprintf(strBuffer, L"%u", (cpuinfo[EAX]  >> 12) & 0xF);
 	node_att_set(cpuNode, L"Type", strBuffer, 0);
 
-	swprintf(strBuffer, L"%u", (cpuinfo[EAX]  >> 16) & 0xF);
-	node_att_set(cpuNode, L"ExtendedModel", strBuffer, 0);
+	dwBuffer = (cpuinfo[EAX] >> 8) & 0xF; // Family
+	dwBuffer2 = (cpuinfo[EAX] >> 20) & 0xFF; // Extended Family
+	if (0x0F == dwBuffer)
+		dwBuffer += dwBuffer2;
 
-	swprintf(strBuffer, L"%u", (cpuinfo[EAX]  >> 20) & 0xFF);
-	node_att_set(cpuNode, L"ExtendedFamily", strBuffer, 0);
+	swprintf(strBuffer, _T("0x%02X"), dwBuffer);
+	node_att_set(cpuNode, L"Family", strBuffer, 0);
+
+	if (0x0F == dwBuffer || 0x06 == dwBuffer)
+		dwBuffer = (((cpuinfo[EAX] >> 16) & 0xF) << 4) + ((cpuinfo[EAX] >> 4) & 0xF);
+	else
+		dwBuffer = (cpuinfo[EAX] >> 4) & 0xF;
+
+	swprintf(strBuffer, L"0x%02X", dwBuffer);
+	node_att_set(cpuNode, L"Model", strBuffer, 0);
 
 	// EBX
-	swprintf(strBuffer, _T("%u"), cpuinfo[EBX] & 0x7F);
-	node_att_set(cpuNode, _T("BrandIndex"), strBuffer, 0);
-
 	swprintf(strBuffer, _T("%u"), 8 * ((cpuinfo[EBX] >> 8) & 0x7F));
 	node_att_set(cpuNode, _T("CacheLineSize"), strBuffer, 0);
 
