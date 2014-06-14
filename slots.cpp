@@ -165,7 +165,7 @@ PNODE EnumSlots()
 				}
 			}
 
-			//0x0B Characteristics 1
+			// 0x0B Characteristics 1
 			unicode = NULL;
 			for (i = 0; i < ARRAYSIZE(SLOT_CHARACTERISTICS1); i++) {
 				if (CHECK_BIT(*(cursor + 0x0B), i)) {

@@ -112,6 +112,9 @@ int main(int argc, CHAR* argv[])
 		node = EnumSlots();
 		node_append_child(hardware, node);
 
+		node = EnumMemorySockets();
+		node_append_child(hardware, node);
+
 		// Processor Sockets
 		node = EnumProcSockets();
 		node_append_child(hardware, node);
