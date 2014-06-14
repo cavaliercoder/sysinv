@@ -29,7 +29,7 @@ typedef struct _RawSmbiosData
 	BYTE    SMBIOSMinorVersion;
 	BYTE    DmiRevision;
 	DWORD   Length;
-	BYTE    SMBIOSTableData[];
+	BYTE    SMBIOSTableData[ANYSIZE_ARRAY];
 } RAW_SMBIOS_DATA, * PRAW_SMBIOS_DATA;
 
 typedef struct _SmbiosStructHeader

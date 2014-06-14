@@ -19,13 +19,13 @@
 #define ERR_CRIT		0x04
 #define ERR_FATAL		0x08
 
-#ifdef _DEBUGerb
+#ifdef _DEBUG
 #define SetError(level, systemErrorCode, message, ...)	_SetError(__FILEW__, __FUNCTIONW__, __LINE__, level, systemErrorCode, message, __VA_ARGS__)
 #else
 #define SetError(level, systemErrorCode, message, ...)	_SetError(NULL, __FUNCTIONW__, __LINE__, level, systemErrorCode, message, __VA_ARGS__)
 #endif
 
-#define CHECK_BIT(var,n)				((var) & (1LL << (n)))
+#define CHECK_BIT(var,n)				((var) & (1 << (n)))
 #define SAFE_INDEX(var, i)				var[ARRAYSIZE(var) > i ? i : 0]
 
 #define VAL_AT_OFFET(type, var, offset)	*((type *)((PBYTE)var + offset))
@@ -34,6 +34,7 @@
 #define DWORD_AT_OFFSET(var, offset)	*((PDWORD)((PBYTE)var + offset))
 #define QWORD_AT_OFFSET(var, offset)	*((PQWORD)((PBYTE)var + offset))
 
+// 64bit unsigned integer 0LL
 typedef unsigned long long QWORD, *PQWORD;
 
 typedef struct _ErrorMessage

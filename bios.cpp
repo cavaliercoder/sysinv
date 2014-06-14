@@ -51,7 +51,7 @@ LPCTSTR BIOS_CHARACTERISTICS_EX1[] = {
 // 7.1.2.2 BIOS Characteristics Extension Byte 2 
 LPCTSTR BIOS_CHARACTERISTICS_EX2[] = {
 	_T("BIOS Boot Specification is supported"),						// Bit 0
-	_T("Function key - initiated network service boot is supported"),	// Bit 1
+	_T("Function key-initiated network service boot is supported"),	// Bit 1
 	_T("Enable targeted content distribution"),						// Bit 2
 	_T("UEFI Specification is supported"),							// Bit 3
 	_T("SMBIOS table describes a virtual machine")					// Bit 4
