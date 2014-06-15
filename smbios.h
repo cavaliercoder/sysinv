@@ -44,18 +44,12 @@ typedef struct _SmbiosStructHeader
 	WORD Handle;
 } SMBIOS_STRUCT_HEADER, *PSMBIOS_STRUCT_HEADER;
 
-typedef struct _ProcessorFamily
+typedef struct _LookupEntry
 {
-	WORD Index;
-	LPCTSTR Name;
-} PROCESSOR_FAMILY, *PPROCESSOR_FAMILY;
-
-typedef struct _ProcessorFeature
-{
-	WORD BitNumber;
+	DWORD Index;
 	LPCTSTR Code;
 	LPCTSTR Description;
-} PROCESSOR_FEATURE, *PPROCESSOR_FEATURE;
+} LOOKUP_ENTRY, *PLOOKUP_ENTRY;
 
 /*
  * Functions

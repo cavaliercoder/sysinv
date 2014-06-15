@@ -5,7 +5,7 @@
 SysInv is a native Windows command line app written in C++ which enumerates hardware and software resources on a local system.
 Resources may be output in a number of supported formats including XML and JSON.
 
-SysInv aims to be an viable Windows alternative to excellent tools such as [lshw](http://ezix.org/project/wiki/HardwareLiSter) for Linux and [dmidecode](http://www.nongnu.org/dmidecode/).
+SysInv aims to quickly become a viable Windows alternative to excellent tools such as [lshw](http://ezix.org/project/wiki/HardwareLiSter), [dmidecode](http://www.nongnu.org/dmidecode/) and [cpuid](http://www.etallen.com/cpuid.html).
 
 Many existing tools and development interfaces (including PowerShell, WMI and various Windows GUIs) return subsets or translated versions of system information. Often multiple sources need to be queried with results translated into a common format to gain simple insights such as installed disks or MSI packages. SysInv queries system information using the lowest possible application layers (such as SMBIOS instead of WMI) to gather the rawest and least filtered data possible. This means more verbose and meaningful data in less time.
 

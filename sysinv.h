@@ -14,6 +14,8 @@ PNODE GetAgentDetail();
 PNODE GetSystemDetail();
 PNODE GetOperatingSystemDetail();
 
+PNODE GetVirtualizationDetail();
+
 // SMBIOS functions
 PNODE GetSmbiosDetail();
 PNODE GetBiosDetail();

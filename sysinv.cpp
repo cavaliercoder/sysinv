@@ -88,6 +88,10 @@ int main(int argc, CHAR* argv[])
 		node = GetBiosSystemDetail();
 		node_append_child(hardware, node);
 
+		// Virtualization info
+		node = GetVirtualizationDetail();
+		node_append_child(hardware, node);
+
 		// SMBIOS info
 		node = GetSmbiosDetail();
 		node_append_child(hardware, node);
