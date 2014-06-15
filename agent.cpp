@@ -2,10 +2,15 @@
 #include "sysinv.h"
 #include "version.h"
 
+#define _TOWIDE(x)				L ## x
+#define TOWIDE(x)				_TOWIDE(x)
+
 PNODE GetAgentDetail()
 {
 	PNODE agentNode = node_alloc(_T("Agent"), 0);
 	TCHAR buffer[MAX_PATH + 1];
+
+	node_att_set(agentNode, _T("Name"), TOWIDE(VER_PRODUCTNAME_STR), 0);
 
 	swprintf_s(buffer, L"%u.%u.%u.%u", VER_PRODUCT_VERSION);
 	node_att_set(agentNode, _T("Version"), buffer, 0);
