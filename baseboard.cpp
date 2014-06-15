@@ -36,6 +36,7 @@ PNODE EnumBaseboards()
 	PNODE baseBoardsNode = node_alloc(_T("Baseboards"), 0);
 	PNODE node = NULL;
 	PNODE slotsNode = NULL;
+	PNODE portsNode = NULL;
 
 	PRAW_SMBIOS_DATA smbios = GetSmbiosData();
 	PSMBIOS_STRUCT_HEADER header = NULL;
@@ -92,13 +93,18 @@ PNODE EnumBaseboards()
 
 		// Children
 		slotsNode = node_append_new(node, _T("Slots"), NODE_FLAG_TABLE);
-
+		portsNode = node_append_new(node, _T("Ports"), NODE_FLAG_TABLE);
 
 		if (0 == BYTE_AT_OFFSET(header, 0x0E)) {
 			// Assume everything is a child
 			// Start with slots
 			while (NULL != (childHeader = GetNextStructureOfType(childHeader, SMB_TABLE_SLOTS))) {
 				node_append_child(slotsNode, GetSlotDetail(smbios, childHeader));
+			}
+
+			// Ports
+			while (NULL != (childHeader = GetNextStructureOfType(childHeader, SMB_TABLE_PORTS))) {
+				node_append_child(portsNode, GetPortDetail(smbios, childHeader));
 			}
 		}
 		else {
@@ -111,6 +117,10 @@ PNODE EnumBaseboards()
 				switch (childHeader->Type) {
 				case SMB_TABLE_SLOTS:
 					node_append_child(slotsNode, GetSlotDetail(smbios, childHeader));
+					break;
+
+				case SMB_TABLE_PORTS:
+					node_append_child(portsNode, GetPortDetail(smbios, childHeader));
 					break;
 				}
 				

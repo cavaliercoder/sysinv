@@ -167,6 +167,7 @@
     <ClCompile Include="common.cpp" />
     <ClCompile Include="memory.cpp" />
     <ClCompile Include="packages.cpp" />
+    <ClCompile Include="ports.cpp" />
     <ClCompile Include="processors.cpp" />
     <ClCompile Include="diskinfo.cpp" />
     <ClCompile Include="os.cpp" />

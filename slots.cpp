@@ -112,75 +112,72 @@ PNODE GetSlotDetail(PRAW_SMBIOS_DATA smbios, PSMBIOS_STRUCT_HEADER header)
 
 	node = node_alloc(_T("Slot"), NODE_FLAG_TABLE_ENTRY);
 
-	// v2.0+
-	if (2 <= smbios->SMBIOSMajorVersion) {
-		// 0x04 Designation
-		pszBuffer = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x04));
-		node_att_set(node, _T("Designation"), pszBuffer, 0);
-		LocalFree(pszBuffer);
+	// 0x04 Designation
+	pszBuffer = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x04));
+	node_att_set(node, _T("Designation"), pszBuffer, 0);
+	LocalFree(pszBuffer);
 
-		// 0x05 Slot Type
-		slotType = BYTE_AT_OFFSET(header, 0x05);
-		node_att_set(node, _T("Type"), SAFE_INDEX(SLOT_TYPE_STRINGS, slotType), 0);
+	// 0x05 Slot Type
+	slotType = BYTE_AT_OFFSET(header, 0x05);
+	node_att_set(node, _T("Type"), SAFE_INDEX(SLOT_TYPE_STRINGS, slotType), 0);
 
-		// 0x06 Slot Data Bus Width
-		node_att_set(node, _T("DataBusWidth"), SAFE_INDEX(SLOT_DATA_BUS_WIDTH, BYTE_AT_OFFSET(header, 0x06)), 0);
+	// 0x06 Slot Data Bus Width
+	node_att_set(node, _T("DataBusWidth"), SAFE_INDEX(SLOT_DATA_BUS_WIDTH, BYTE_AT_OFFSET(header, 0x06)), 0);
 
-		// 0x07 Curent Usage
-		node_att_set(node, _T("Usage"), SAFE_INDEX(SLOT_CURRENT_USAGE, BYTE_AT_OFFSET(header, 0x07)), 0);
+	// 0x07 Curent Usage
+	node_att_set(node, _T("Usage"), SAFE_INDEX(SLOT_CURRENT_USAGE, BYTE_AT_OFFSET(header, 0x07)), 0);
 
-		// 0x08 Slot Length
-		node_att_set(node, _T("Length"), SAFE_INDEX(SLOT_LENGTH, BYTE_AT_OFFSET(header, 0x08)), 0);
+	// 0x08 Slot Length
+	node_att_set(node, _T("Length"), SAFE_INDEX(SLOT_LENGTH, BYTE_AT_OFFSET(header, 0x08)), 0);
 
-		// 0x09 Slot ID
-		switch (slotType) {
-		case 0x04:	// MCA
-		case 0x05:	// EISA
-			swprintf(szBuffer, _T("%u"), BYTE_AT_OFFSET(header, 0x09) + 1);
-			node_att_set(node, _T("SlotNumber"), szBuffer, 0);
-			break;
+	// 0x09 Slot ID
+	switch (slotType) {
+	case 0x04:	// MCA
+	case 0x05:	// EISA
+		swprintf(szBuffer, _T("%u"), BYTE_AT_OFFSET(header, 0x09) + 1);
+		node_att_set(node, _T("SlotNumber"), szBuffer, 0);
+		break;
 
-		case 0x07:	// PC Card (PCMCIA)
+	case 0x07:	// PC Card (PCMCIA)
+		swprintf(szBuffer, _T("%u"), BYTE_AT_OFFSET(header, 0x09));
+		node_att_set(node, _T("AdapterNumber"), szBuffer, 0);
+
+		swprintf(szBuffer, _T("%u"), BYTE_AT_OFFSET(header, 0x0A));
+		node_att_set(node, _T("SocketNumber"), szBuffer, 0);
+		break;
+
+	default:	// Other
+		// PCI, AGP, PCI-X, and PCI Express variants
+		if (
+			0x06 == slotType
+			|| (0x0E <= slotType && 0x13 >= slotType)
+			|| (0xA5 <= slotType && 0xB6 >= slotType)
+			) {
 			swprintf(szBuffer, _T("%u"), BYTE_AT_OFFSET(header, 0x09));
-			node_att_set(node, _T("AdapterNumber"), szBuffer, 0);
-
-			swprintf(szBuffer, _T("%u"), BYTE_AT_OFFSET(header, 0x0A));
-			node_att_set(node, _T("SocketNumber"), szBuffer, 0);
-			break;
-
-		default:	// Other
-			// PCI, AGP, PCI-X, and PCI Express variants
-			if (
-				0x06 == slotType
-				|| (0x0E <= slotType && 0x13 >= slotType)
-				|| (0xA5 <= slotType && 0xB6 >= slotType)
-				) {
-				swprintf(szBuffer, _T("%u"), BYTE_AT_OFFSET(header, 0x09));
-				node_att_set(node, _T("SlotNumber"), szBuffer, 0);
-			}
+			node_att_set(node, _T("SlotNumber"), szBuffer, 0);
 		}
-
-		// 0x0B Characteristics 1
-		pszBuffer = NULL;
-		for (i = 0; i < ARRAYSIZE(SLOT_CHARACTERISTICS1); i++) {
-			if (CHECK_BIT(BYTE_AT_OFFSET(header, 0x0B), i)) {
-				AppendMultiString(&pszBuffer, SLOT_CHARACTERISTICS1[i]);
-			}
-		}
-
-		// v2.1+
-		if (2 < smbios->SMBIOSMajorVersion || (2 == smbios->SMBIOSMajorVersion && 1 <= smbios->SMBIOSMinorVersion)) {
-			//0x0C Characteristics 2
-			for (i = 0; i < ARRAYSIZE(SLOT_CHARACTERISTICS2); i++) {
-				if (CHECK_BIT(BYTE_AT_OFFSET(header, 0x0C), i)) {
-					AppendMultiString(&pszBuffer, SLOT_CHARACTERISTICS2[i]);
-				}
-			}
-		}
-
-		node_att_set_multi(node, _T("Characteristics"), pszBuffer, 0);
-		LocalFree(pszBuffer);
 	}
+
+	// 0x0B Characteristics 1
+	pszBuffer = NULL;
+	for (i = 0; i < ARRAYSIZE(SLOT_CHARACTERISTICS1); i++) {
+		if (CHECK_BIT(BYTE_AT_OFFSET(header, 0x0B), i)) {
+			AppendMultiString(&pszBuffer, SLOT_CHARACTERISTICS1[i]);
+		}
+	}
+
+	// v2.1+
+	if (2 < smbios->SMBIOSMajorVersion || (2 == smbios->SMBIOSMajorVersion && 1 <= smbios->SMBIOSMinorVersion)) {
+		//0x0C Characteristics 2
+		for (i = 0; i < ARRAYSIZE(SLOT_CHARACTERISTICS2); i++) {
+			if (CHECK_BIT(BYTE_AT_OFFSET(header, 0x0C), i)) {
+				AppendMultiString(&pszBuffer, SLOT_CHARACTERISTICS2[i]);
+			}
+		}
+	}
+
+	node_att_set_multi(node, _T("Characteristics"), pszBuffer, 0);
+	LocalFree(pszBuffer);
 
 	return node;
 }
