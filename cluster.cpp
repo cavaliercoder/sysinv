@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "sysinv.h"
-#include "cluster.h"
+
+#pragma comment(lib, "ClusAPI.lib")
+#include <ClusApi.h>
 
 PNODE EnumClusterGroups(HCLUSTER hCluster);
 PNODE EnumClusterNodes(HCLUSTER hCluster);
