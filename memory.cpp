@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "sysinv.h"
 #include "smbios.h"
+#include "virtualization.h"
 
 // 7.17.1 Memory Array — Location 
 LPCTSTR MEM_ARRAY_LOCATION[] = {
@@ -132,15 +133,21 @@ PNODE EnumMemorySockets()
 	DWORD i;
 
 	WORD wbuffer = 0;
+	DWORD dwBuffer = 0;
+	
+	QWORD totalArrayMb = 0;
+	QWORD totalSystemMb = 0;
+
+	BOOL isVirt = IsVirtualized();
 
 	// v2.1+ (Use Table Type 5 Memory Controller for < v2.1)
 	if (smbios->SMBIOSMajorVersion < 2 || (smbios->SMBIOSMajorVersion == 2 && smbios->SMBIOSMinorVersion < 1))
 		return parentNode;
 
-	parentNode = node_alloc(_T("MemoryArrays"), NODE_FLAG_TABLE);
+	parentNode = node_alloc(_T("Memory"), NODE_FLAG_TABLE);
 	while (NULL != (header = GetNextStructureOfType(header, SMB_TABLE_MEM_ARRAY))) {
 		cursor = (PBYTE)header;
-		node = node_append_new(parentNode, _T("MemoryArray"), NODE_FLAG_TABLE_ENTRY);
+		node = node_append_new(parentNode, _T("Array"), NODE_FLAG_TABLE_ENTRY);
 
 		// 0x04 Location
 		node_att_set(node, _T("Location"), SAFE_INDEX(MEM_ARRAY_LOCATION, BYTE_AT_OFFSET(header, 0x04)), 0);
@@ -152,15 +159,24 @@ PNODE EnumMemorySockets()
 		node_att_set(node, _T("ErrorChecking"), SAFE_INDEX(MEM_ARRAY_EC_TYPE, BYTE_AT_OFFSET(header, 0x06)), 0);
 
 		// 0x07 Maximum Capacity (KB)
-		swprintf(buffer, _T("%u"), DWORD_AT_OFFSET(header, 0x07));
-		node_att_set(node, _T("MaxKilobytes"), buffer, 0);
+		dwBuffer = DWORD_AT_OFFSET(header, 0x07);
+		if (dwBuffer != 0x80000000) {
+			swprintf(buffer, _T("%u"), dwBuffer);
+			node_att_set(node, _T("MaxCapacityKb"), buffer, 0);
+
+			swprintf(buffer, _T("%u"), dwBuffer / 1024);
+			node_att_set(node, _T("MaxCapacityMb"), buffer, 0);
+
+			swprintf(buffer, _T("%u"), dwBuffer / 1048576);
+			node_att_set(node, _T("MaxCapacityGb"), buffer, 0);
+		}
 
 		// 0x0D Number of memory devices
 		swprintf(buffer, _T("%u"), BYTE_AT_OFFSET(header, 0x0D));
 		node_att_set(node, _T("SocketCount"), buffer, 0);
 
 		// 7.18 Memory Devices (Type 17)
-		devicesNode = node_append_new(node, _T("Devices"), NODE_FLAG_TABLE);
+		devicesNode = node_append_new(node, _T("Modules"), NODE_FLAG_TABLE);
 		while (NULL != (memHeader = GetNextStructureOfType(memHeader, SMB_TABLE_MEM_DEVICE))) {
 			memCursor = (PBYTE)memHeader;
 
@@ -170,18 +186,24 @@ PNODE EnumMemorySockets()
 				continue;
 
 			// Skip empty slots
-			if (0 == WORD_AT_OFFSET(memHeader, 0x0C))
+			if (isVirt && 0 == WORD_AT_OFFSET(memHeader, 0x0C))
 				continue;
 
-			deviceNode = node_append_new(devicesNode, _T("Device"), NODE_FLAG_TABLE_ENTRY);
+			deviceNode = node_append_new(devicesNode, _T("Module"), NODE_FLAG_TABLE_ENTRY);
 
 			// 0x08 Total Width
-			swprintf(buffer, _T("%u"), WORD_AT_OFFSET(memHeader, 0x08));
-			node_att_set(deviceNode, _T("TotalWidth"), buffer, 0);
+			wbuffer = WORD_AT_OFFSET(memHeader, 0x08);
+			if (0xFFFF != wbuffer) {
+				swprintf(buffer, _T("%u"), wbuffer);
+				node_att_set(deviceNode, _T("TotalWidth"), buffer, 0);
+			}
 
 			// 0x0A Data Width
-			swprintf(buffer, _T("%u"), WORD_AT_OFFSET(memHeader, 0x0A));
-			node_att_set(deviceNode, _T("DataWidth"), buffer, 0);
+			wbuffer = WORD_AT_OFFSET(memHeader, 0x0A);
+			if (0xFFFF != wbuffer) {
+				swprintf(buffer, _T("%u"), wbuffer);
+				node_att_set(deviceNode, _T("DataWidth"), buffer, 0);
+			}
 
 			// 0x0C Size
 			wbuffer = WORD_AT_OFFSET(memHeader, 0x0C);
@@ -193,13 +215,28 @@ PNODE EnumMemorySockets()
 			}
 			else
 			{
-				// Size is in MB
-				swprintf(buffer, _T("%u"), (DWORD)wbuffer * 1048576);
-				node_att_set(deviceNode, _T("Size"), buffer, 0);
+				// Size is in MB. Scale down to bytes
+				swprintf(buffer, _T("%llu"), (QWORD)wbuffer * 1048576LL);
+				node_att_set(deviceNode, _T("SizeBytes"), buffer, 0);
 
+				swprintf(buffer, _T("%u"), wbuffer);
+				node_att_set(deviceNode, _T("SizeMb"), buffer, 0);
+				totalArrayMb += wbuffer;
+
+				if (wbuffer > 1024) {
+					swprintf(buffer, _T("%u"), wbuffer / 1024);
+					node_att_set(deviceNode, _T("SizeGb"), buffer, 0);
+				}
 			}
 			// 0x0E Form Factor
 			node_att_set(deviceNode, _T("FormFactor"), SAFE_INDEX(MEM_FORM_FACTOR, BYTE_AT_OFFSET(memHeader, 0x0E)), 0);
+
+			// 0x0F Device Set
+			wbuffer = BYTE_AT_OFFSET(memHeader, 0x0F);
+			if (0xFF != wbuffer && 0x00 != wbuffer) {
+				swprintf(buffer, _T("0x%X"), wbuffer);
+				node_att_set(deviceNode, _T("DeviceSet"), buffer, 0);
+			}
 
 			// 0x10 Device Locator
 			node_att_set(deviceNode, _T("DeviceLocator"), GetSmbiosString(memHeader, BYTE_AT_OFFSET(memHeader, 0x10)), 0);
@@ -239,7 +276,16 @@ PNODE EnumMemorySockets()
 				node_att_set(deviceNode, _T("PartNumber"), GetSmbiosString(memHeader, BYTE_AT_OFFSET(memHeader, 0x1A)), 0);
 			}
 		}
+		
+		// Total array size
+		totalSystemMb += totalArrayMb;
+		swprintf(buffer, _T("%llu"), totalArrayMb);
+		node_att_set(node, _T("TotalInstalledMb"), buffer, 0);
 	}
+
+	// Total system size
+	swprintf(buffer, _T("%llu"), totalSystemMb);
+	node_att_set(parentNode, _T("TotalInstalledMb"), buffer, 0);
 
 	return parentNode;
 }
