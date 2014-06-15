@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "sysinv.h"
 #include "smbios.h"
+#include "baseboard.h"
 
 // 7.3.1 Baseboard — feature flags
 LPCTSTR BOARD_FEATURES[] = {
@@ -34,63 +35,86 @@ PNODE EnumBaseboards()
 {
 	PNODE baseBoardsNode = node_alloc(_T("Baseboards"), 0);
 	PNODE node = NULL;
+	PNODE slotsNode = NULL;
 
 	PRAW_SMBIOS_DATA smbios = GetSmbiosData();
 	PSMBIOS_STRUCT_HEADER header = NULL;
-	PBYTE cursor = NULL;
-
+	PSMBIOS_STRUCT_HEADER childHeader = NULL;
+	
 	LPTSTR unicode = NULL;
 	DWORD i = 0;
 
 	while (NULL != (header = GetNextStructureOfType(header, SMB_TABLE_BASEBOARD))) {
-		cursor = (PBYTE)header;
+		node = node_append_new(baseBoardsNode, _T("BaseBoard"), 0);
 
-		// v2.0+
-		if (2 <= smbios->SMBIOSMajorVersion) {
-			node = node_append_new(baseBoardsNode, _T("BaseBoard"), 0);
+		// 0x04 Manufacturer
+		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x04));
+		node_att_set(node, _T("Manufacturer"), unicode, 0);
+		LocalFree(unicode);
 
-			// 0x04 Manufacturer
-			unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x04));
-			node_att_set(node, _T("Manufacturer"), unicode, 0);
-			LocalFree(unicode);
+		// 0x05 Product
+		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x05));
+		node_att_set(node, _T("Product"), unicode, 0);
+		LocalFree(unicode);
 
-			// 0x05 Product
-			unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x05));
-			node_att_set(node, _T("Product"), unicode, 0);
-			LocalFree(unicode);
+		// 0x06 Version String
+		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x06));
+		node_att_set(node, _T("Version"), unicode, 0);
+		LocalFree(unicode);
 
-			// 0x06 Version String
-			unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x06));
-			node_att_set(node, _T("Version"), unicode, 0);
-			LocalFree(unicode);
+		// 0x07 Serial Number
+		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x07));
+		node_att_set(node, _T("SerialNumber"), unicode, 0);
+		LocalFree(unicode);
 
-			// 0x07 Serial Number
-			unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x07));
-			node_att_set(node, _T("SerialNumber"), unicode, 0);
-			LocalFree(unicode);
+		// 0x08 Asset Tag
+		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x08));
+		node_att_set(node, _T("AssetTag"), unicode, 0);
+		LocalFree(unicode);
 
-			// 0x08 Asset Tag
-			unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x08));
-			node_att_set(node, _T("AssetTag"), unicode, 0);
-			LocalFree(unicode);
-
-			// 0x09 Feature flags
-			unicode = NULL;
-			for (i = 0; i < ARRAYSIZE(BOARD_FEATURES); i++) {
-				if (CHECK_BIT(BYTE_AT_OFFSET(header, 0x09), i)) {
-					AppendMultiString(&unicode, BOARD_FEATURES[i]);
-				}
+		// 0x09 Feature flags
+		unicode = NULL;
+		for (i = 0; i < ARRAYSIZE(BOARD_FEATURES); i++) {
+			if (CHECK_BIT(BYTE_AT_OFFSET(header, 0x09), i)) {
+				AppendMultiString(&unicode, BOARD_FEATURES[i]);
 			}
-			node_att_set_multi(node, _T("Features"), unicode, 0);
-			LocalFree(unicode);
+		}
+		node_att_set_multi(node, _T("Features"), unicode, 0);
+		LocalFree(unicode);
 
-			// 0x0A Location in Chassis
-			unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x0A));
-			node_att_set(node, _T("Location"), unicode, 0);
-			LocalFree(unicode);
+		// 0x0A Location in Chassis
+		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x0A));
+		node_att_set(node, _T("Location"), unicode, 0);
+		LocalFree(unicode);
 			
-			// 0x0D Board Type
-			node_att_set(node, _T("Type"), SAFE_INDEX(BOARD_TYPE, BYTE_AT_OFFSET(header, 0x0D)), 0);
+		// 0x0D Board Type
+		node_att_set(node, _T("Type"), SAFE_INDEX(BOARD_TYPE, BYTE_AT_OFFSET(header, 0x0D)), 0);
+
+		// Children
+		slotsNode = node_append_new(node, _T("Slots"), NODE_FLAG_TABLE);
+
+
+		if (0 == BYTE_AT_OFFSET(header, 0x0E)) {
+			// Assume everything is a child
+			// Start with slots
+			while (NULL != (childHeader = GetNextStructureOfType(childHeader, SMB_TABLE_SLOTS))) {
+				node_append_child(slotsNode, GetSlotDetail(smbios, childHeader));
+			}
+		}
+		else {
+			// Enumerate explicitely linked children
+			for (i = 0; i < BYTE_AT_OFFSET(header, 0x0E); i++) {
+				// Fetch child by handle
+				childHeader = GetStructureByHandle(WORD_AT_OFFSET(header, 0x0F + (i * 0x02)));
+
+				// Add node according to type
+				switch (childHeader->Type) {
+				case SMB_TABLE_SLOTS:
+					node_append_child(slotsNode, GetSlotDetail(smbios, childHeader));
+					break;
+				}
+				
+			}
 		}
 	}
 

@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "sysinv.h"
 #include "smbios.h"
+#include "baseboard.h"
 
 LPCTSTR SLOT_TYPE_STRINGS[] = {
 	_T("Invalid"),								// 0x00 Invalid
@@ -100,94 +101,86 @@ LPCTSTR SLOT_CHARACTERISTICS2[] = {
 	_T("PCI slot supports SMBus signal.")		// Bit 2
 };
 
-// SMBIOS Table Type 4
-PNODE EnumSlots()
+// SMBIOS Table Type 4 (appended to a Baseboard Type 2)
+PNODE GetSlotDetail(PRAW_SMBIOS_DATA smbios, PSMBIOS_STRUCT_HEADER header)
 {
-	PNODE slotsNode = node_alloc(_T("Slots"), NODE_FLAG_TABLE);
 	PNODE node = NULL;
-	PRAW_SMBIOS_DATA smbios = GetSmbiosData();
-	PSMBIOS_STRUCT_HEADER header = NULL;
-	PBYTE cursor = NULL;
-	LPTSTR unicode = NULL;
-	TCHAR buffer[MAX_PATH + 1];
-	DWORD i = 0;
+	LPTSTR pszBuffer = NULL;
+	TCHAR szBuffer[MAX_PATH + 1];
 	DWORD slotType = 0;
+	DWORD i = 0;
 
-	while (NULL != (header = GetNextStructureOfType(header, SMB_TABLE_SLOTS))) {
-		cursor = (PBYTE)header;
-		node = node_append_new(slotsNode, _T("Slot"), NODE_FLAG_TABLE_ENTRY);
+	node = node_alloc(_T("Slot"), NODE_FLAG_TABLE_ENTRY);
 
-		// v2.0+
-		if (2 <= smbios->SMBIOSMajorVersion) {
-			// 0x04 Designation
-			unicode = GetSmbiosString(header, *(cursor + 0x04));
-			node_att_set(node, _T("Designation"), unicode, 0);
-			LocalFree(unicode);
+	// v2.0+
+	if (2 <= smbios->SMBIOSMajorVersion) {
+		// 0x04 Designation
+		pszBuffer = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x04));
+		node_att_set(node, _T("Designation"), pszBuffer, 0);
+		LocalFree(pszBuffer);
 
-			// 0x05 Slot Type
-			slotType = (*cursor + 0x05);
-			node_att_set(node, _T("Type"), SAFE_INDEX(SLOT_TYPE_STRINGS, slotType), 0);
+		// 0x05 Slot Type
+		slotType = BYTE_AT_OFFSET(header, 0x05);
+		node_att_set(node, _T("Type"), SAFE_INDEX(SLOT_TYPE_STRINGS, slotType), 0);
 
-			// 0x06 Slot Data Bus Width
-			node_att_set(node, _T("DataBusWidth"), SAFE_INDEX(SLOT_DATA_BUS_WIDTH, *(cursor + 0x06)), 0);
+		// 0x06 Slot Data Bus Width
+		node_att_set(node, _T("DataBusWidth"), SAFE_INDEX(SLOT_DATA_BUS_WIDTH, BYTE_AT_OFFSET(header, 0x06)), 0);
 
-			// 0x07 Curent Usage
-			node_att_set(node, _T("Usage"), SAFE_INDEX(SLOT_CURRENT_USAGE, *(cursor + 0x07)), 0);
+		// 0x07 Curent Usage
+		node_att_set(node, _T("Usage"), SAFE_INDEX(SLOT_CURRENT_USAGE, BYTE_AT_OFFSET(header, 0x07)), 0);
 
-			// 0x08 Slot Length
-			node_att_set(node, _T("Length"), SAFE_INDEX(SLOT_LENGTH, *(cursor + 0x08)), 0);
+		// 0x08 Slot Length
+		node_att_set(node, _T("Length"), SAFE_INDEX(SLOT_LENGTH, BYTE_AT_OFFSET(header, 0x08)), 0);
 
-			// 0x09 Slot ID
-			switch (slotType) {
-			case 0x04:	// MCA
-			case 0x05:	// EISA
-				swprintf(buffer, _T("%u"), *(cursor + 0x09) + 1);
-				node_att_set(node, _T("SlotNumber"), buffer, 0);
-				break;
+		// 0x09 Slot ID
+		switch (slotType) {
+		case 0x04:	// MCA
+		case 0x05:	// EISA
+			swprintf(szBuffer, _T("%u"), BYTE_AT_OFFSET(header, 0x09) + 1);
+			node_att_set(node, _T("SlotNumber"), szBuffer, 0);
+			break;
 
-			case 0x07:	// PC Card (PCMCIA)
-				swprintf(buffer, _T("%u"), *(cursor + 0x09));
-				node_att_set(node, _T("AdapterNumber"), buffer, 0);
+		case 0x07:	// PC Card (PCMCIA)
+			swprintf(szBuffer, _T("%u"), BYTE_AT_OFFSET(header, 0x09));
+			node_att_set(node, _T("AdapterNumber"), szBuffer, 0);
 
-				swprintf(buffer, _T("%u"), *(cursor + 0x0A));
-				node_att_set(node, _T("SocketNumber"), buffer, 0);
-				break; 
+			swprintf(szBuffer, _T("%u"), BYTE_AT_OFFSET(header, 0x0A));
+			node_att_set(node, _T("SocketNumber"), szBuffer, 0);
+			break;
 
-			default:	// Other
-				// PCI, AGP, PCI-X, and PCI Express variants
-				if (
-					0x06 == slotType 
-					|| (0x0E <= slotType && 0x13 >= slotType)
-					|| (0xA5 <= slotType && 0xB6 >= slotType)
-					) {
-					swprintf(buffer, _T("%u"), *(cursor + 0x09));
-					node_att_set(node, _T("SlotNumber"), buffer, 0);
-				}
+		default:	// Other
+			// PCI, AGP, PCI-X, and PCI Express variants
+			if (
+				0x06 == slotType
+				|| (0x0E <= slotType && 0x13 >= slotType)
+				|| (0xA5 <= slotType && 0xB6 >= slotType)
+				) {
+				swprintf(szBuffer, _T("%u"), BYTE_AT_OFFSET(header, 0x09));
+				node_att_set(node, _T("SlotNumber"), szBuffer, 0);
 			}
-
-			// 0x0B Characteristics 1
-			unicode = NULL;
-			for (i = 0; i < ARRAYSIZE(SLOT_CHARACTERISTICS1); i++) {
-				if (CHECK_BIT(*(cursor + 0x0B), i)) {
-					AppendMultiString(&unicode, SLOT_CHARACTERISTICS1[i]);
-				}
-			}
-
-			// v2.1+
-			if (2 < smbios->SMBIOSMajorVersion || (2 == smbios->SMBIOSMajorVersion && 1 <= smbios->SMBIOSMinorVersion)) {
-				//0x0C Characteristics 2
-				for (i = 0; i < ARRAYSIZE(SLOT_CHARACTERISTICS2); i++) {
-					if (CHECK_BIT(*(cursor + 0x0C), i)) {
-						AppendMultiString(&unicode, SLOT_CHARACTERISTICS2[i]);
-					}
-				}
-			}
-
-			node_att_set_multi(node, _T("Characteristics"), unicode, 0);
-			LocalFree(unicode);
-
 		}
+
+		// 0x0B Characteristics 1
+		pszBuffer = NULL;
+		for (i = 0; i < ARRAYSIZE(SLOT_CHARACTERISTICS1); i++) {
+			if (CHECK_BIT(BYTE_AT_OFFSET(header, 0x0B), i)) {
+				AppendMultiString(&pszBuffer, SLOT_CHARACTERISTICS1[i]);
+			}
+		}
+
+		// v2.1+
+		if (2 < smbios->SMBIOSMajorVersion || (2 == smbios->SMBIOSMajorVersion && 1 <= smbios->SMBIOSMinorVersion)) {
+			//0x0C Characteristics 2
+			for (i = 0; i < ARRAYSIZE(SLOT_CHARACTERISTICS2); i++) {
+				if (CHECK_BIT(BYTE_AT_OFFSET(header, 0x0C), i)) {
+					AppendMultiString(&pszBuffer, SLOT_CHARACTERISTICS2[i]);
+				}
+			}
+		}
+
+		node_att_set_multi(node, _T("Characteristics"), pszBuffer, 0);
+		LocalFree(pszBuffer);
 	}
 
-	return slotsNode;
+	return node;
 }
