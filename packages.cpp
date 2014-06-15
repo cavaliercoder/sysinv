@@ -1,6 +1,11 @@
 /*
  * Complements to:
  * http://mariusbancila.ro/blog/2011/05/01/finding-installed-applications-with-vc/
+ * 
+ * Potential registry locations of hotfixes per version:
+ * http://support.microsoft.com/kb/184305
+ * http://support.microsoft.com/kb/262841
+ * HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\Packages
  */
 #include "stdafx.h"
 #include "sysinv.h"
