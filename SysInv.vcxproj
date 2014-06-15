@@ -154,6 +154,7 @@
     <ClInclude Include="sysinv.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="version.h" />
+    <ClInclude Include="virtualization.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="agent.cpp" />

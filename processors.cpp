@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "sysinv.h"
 #include "smbios.h"
+#include "virtualization.h"
 #include <intrin.h>
 
 #define BUFLEN	MAX_PATH + 1
@@ -284,7 +285,7 @@ LPCTSTR PROCESSOR_CHARACTERISTICS[] = {
 
 // Intel Table 3-20
 LOOKUP_ENTRY PROC_FEATURES_ECX[] = {
-		{ 0, _T("SSE3"), _T("Streaming SIMD Extensions 3 ") },
+		{ 0, _T("SSE3"), _T("Streaming SIMD Extensions 3") },
 		{ 1, _T("PCLMULQDQ"), _T("PCLMULQDQ instruction") },
 		{ 2, _T("DTES64 "), _T("64-bit DS Area") },
 		{ 3, _T("MONITOR "), _T("MONITOR/MWAIT") },
@@ -503,12 +504,14 @@ PNODE EnumProcSockets()
 	DWORD i = 0;
 	DWORD dwBuffer = 0;
 
+	BOOL isVirt = IsVirtualized();
+
 	while (NULL != (header = GetNextStructureOfType(header, SMB_TABLE_PROCESSOR))) {
 		// v2.0+
 		if (2 <= smbios->SMBIOSMajorVersion) {
 			// Ignore unpopulated sockets if machine is virtualized
 			// Bit 6 = CPU Sock Populated
-			if (!(BYTE_AT_OFFSET(header, 0x18) >> 6))
+			if (isVirt && !(BYTE_AT_OFFSET(header, 0x18) >> 6))
 				continue;
 
 			node = node_append_new(procSocketsNode, _T("Processor"), NODE_FLAG_TABLE_ENTRY);

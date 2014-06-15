@@ -1,18 +1,13 @@
 #include "stdafx.h"
 #include "sysinv.h"
 #include "smbios.h"
+#include "virtualization.h"
 
+PLOOKUP_ENTRY VIRT_PLATFORM = NULL;
 
-#define VIRT_PLATFORM_NONE			0
-#define VIRT_PLATFORM_VMWARE		1
-#define VIRT_PLATFORM_VBOX			2
-#define VIRT_PLATFORM_QEMU			3
-#define VIRT_PLATFORM_KVM			4
-#define VIRT_PLATFORM_MSVPC			5
-#define VIRT_PLATFORM_HYPERV		6
-#define VIRT_PLATFORM_XEN			7
-#define VIRT_PLATFORM_VTZO			8
-#define VIRT_PLATFORM_PARA			9
+LOOKUP_ENTRY VIRT_PHYSICAL = { VIRT_PLATFORM_NONE, NULL, _T("Physical") };
+
+LOOKUP_ENTRY VIRT_UNKNOWN = { VIRT_PLATFORM_NONE, NULL, _T("Unknown") };
 
 LOOKUP_ENTRY VIRT_VENDORS[] = {
 		{ VIRT_PLATFORM_VMWARE, _T("vmware"), _T("VMWare") },
@@ -27,39 +22,65 @@ LOOKUP_ENTRY VIRT_VENDORS[] = {
 		{ VIRT_PLATFORM_VTZO, _T("virtuozzo"), _T("Virtuozzo") }
 };
 
-PNODE GetVirtualizationDetail()
+BOOL IsVirtualized()
 {
+	PLOOKUP_ENTRY platform = GetVirtualizationPlatform();
+	return platform->Index != VIRT_PLATFORM_NONE;
+}
+
+PLOOKUP_ENTRY GetVirtualizationPlatform() {
 	DWORD i = 0;
 	DWORD dwVirtPlatform = VIRT_PLATFORM_NONE;
-	PNODE virtNode = node_alloc(_T("Virtualization"), 0);
 	PSMBIOS_STRUCT_HEADER sysTable = GetNextStructureOfType(NULL, SMB_TABLE_SYSTEM);
 	LPTSTR szManufacturer = NULL;
 	LPTSTR szProduct = NULL;
 
-	// 
+	// Return cached result
+	if (NULL != VIRT_PLATFORM)
+		return VIRT_PLATFORM;
+
+	// Validate SMBIOS data 
 	if (NULL == sysTable) {
 		SetError(ERR_CRIT, 0, _T("Unable to determine Virtualization status from SBMIOS System Table (Type %u)"), SMB_TABLE_SYSTEM);
-		node_att_set(virtNode, _T("Status"), _T("Unknown"), 0);
-		return virtNode;
+		VIRT_PLATFORM = &VIRT_UNKNOWN;
+		return VIRT_PLATFORM;
 	}
 
+	// Default to physical
+	VIRT_PLATFORM = &VIRT_PHYSICAL;
+
+	// Search for platform names in SMBIOS System Manufacturer and Product strings
 	szManufacturer = GetSmbiosString(sysTable, BYTE_AT_OFFSET(sysTable, 0x04));
 	szProduct = GetSmbiosString(sysTable, BYTE_AT_OFFSET(sysTable, 0x05));
 	for (i = 0; i < ARRAYSIZE(VIRT_VENDORS); i++)
 	{
 		if (NULL != wcsistr(szManufacturer, VIRT_VENDORS[i].Code) || NULL != wcsstr(szProduct, VIRT_VENDORS[i].Code)) {
-			dwVirtPlatform = VIRT_VENDORS[i].Index;
-			node_att_set(virtNode, _T("Platform"), VIRT_VENDORS[i].Description, 0);
+			VIRT_PLATFORM = &VIRT_VENDORS[i];
 			break;
 		}
 	}
 	LocalFree(szManufacturer);
 	LocalFree(szProduct);
 
-	if (VIRT_PLATFORM_NONE == dwVirtPlatform)
-		node_att_set(virtNode, _T("Status"), _T("Physical"), 0);
-	else
-		node_att_set(virtNode, _T("Status"), _T("Virtual"), 0);
+	return VIRT_PLATFORM;
+}
 
+PNODE GetVirtualizationDetail()
+{
+	PLOOKUP_ENTRY platform = GetVirtualizationPlatform();
+	PNODE virtNode = node_alloc(_T("Virtualization"), 0);
+	if (&VIRT_UNKNOWN == VIRT_PLATFORM) {
+		node_att_set(virtNode, _T("Status"), _T("Unknown"), 0);
+	}
+	else {
+		if (VIRT_PLATFORM_NONE == platform->Index) {
+			node_att_set(virtNode, _T("Status"), _T("Physical"), 0);
+		}
+
+		else {
+			node_att_set(virtNode, _T("Status"), _T("Virtual"), 0);
+			node_att_set(virtNode, _T("Platform"), platform->Description, 0);
+		}
+	}
 	return virtNode;
 }

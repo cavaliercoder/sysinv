@@ -25,8 +25,9 @@ int AppendMultiString(LPTSTR *lpmszMulti, LPCTSTR szNew)
 
 	newSzLength = wcslen(szNew);
 
-	// Old multistring was empty
+	// If old multistring was empty
 	if (NULL == (*lpmszMulti)) {
+		// Write new string with two null chars at the end
 		newSize = sizeof(TCHAR) * (newSzLength + 2);
 		(*lpmszMulti) = (LPTSTR)LocalAlloc(LPTR, newSize);
 		memcpy((*lpmszMulti), szNew, sizeof(TCHAR) * newSzLength);
@@ -36,14 +37,14 @@ int AppendMultiString(LPTSTR *lpmszMulti, LPCTSTR szNew)
 	mszMulti = *(lpmszMulti);
 
 	// Iterate chars in old multistring until double null-char is found
-	count = 1;
-	for (i = 0; !(('\0' == mszMulti[i]) && ('\0' == mszMulti[i + 1])); i++) {
+	count = 0;
+	for (i = 1; !(('\0' == mszMulti[i - 1]) && ('\0' == mszMulti[i])); i++) {
 		if ('\0' == mszMulti[i]) {
 			count++;
 		}
 	}
 
-	oldLength = i;
+	oldLength = i - 1;
 	newLength = oldLength + newSzLength;
 	newSize = sizeof(TCHAR) * (newLength + count + 2);
 

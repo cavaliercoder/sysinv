@@ -40,7 +40,6 @@ PNODE EnumBaseboards()
 	PBYTE cursor = NULL;
 
 	LPTSTR unicode = NULL;
-	TCHAR buffer[MAX_PATH + 1];
 	DWORD i = 0;
 
 	while (NULL != (header = GetNextStructureOfType(header, SMB_TABLE_BASEBOARD))) {
