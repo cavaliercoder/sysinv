@@ -36,7 +36,7 @@ PNODE GetVirtualizationDetail()
 	LPTSTR szManufacturer = NULL;
 	LPTSTR szProduct = NULL;
 
-
+	// 
 	if (NULL == sysTable) {
 		SetError(ERR_CRIT, 0, _T("Unable to determine Virtualization status from SBMIOS System Table (Type %u)"), SMB_TABLE_SYSTEM);
 		node_att_set(virtNode, _T("Status"), _T("Unknown"), 0);
@@ -45,16 +45,14 @@ PNODE GetVirtualizationDetail()
 
 	szManufacturer = GetSmbiosString(sysTable, BYTE_AT_OFFSET(sysTable, 0x04));
 	szProduct = GetSmbiosString(sysTable, BYTE_AT_OFFSET(sysTable, 0x05));
-
 	for (i = 0; i < ARRAYSIZE(VIRT_VENDORS); i++)
 	{
-		if (NULL != wcsstr(szManufacturer, VIRT_VENDORS[i].Code) || NULL != wcsstr(szProduct, VIRT_VENDORS[i].Code)) {
+		if (NULL != wcsistr(szManufacturer, VIRT_VENDORS[i].Code) || NULL != wcsstr(szProduct, VIRT_VENDORS[i].Code)) {
 			dwVirtPlatform = VIRT_VENDORS[i].Index;
 			node_att_set(virtNode, _T("Platform"), VIRT_VENDORS[i].Description, 0);
 			break;
 		}
 	}
-
 	LocalFree(szManufacturer);
 	LocalFree(szProduct);
 
