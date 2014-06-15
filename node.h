@@ -25,12 +25,12 @@
 #define NODE_XML_FLAG_NOWS		0x2		// No whitespace
 #define NODE_XML_FLAG_NOATTS	0x4		// Print attributes as elements
 
-#define NODE_XML_DELIM_NL		L"\r\n"	// New line for XML output
+#define NODE_XML_DELIM_NL		L"\n"	// New line for XML output
 #define NODE_XML_DELIM_INDENT	L"  "	// Tab token for XML output
 
 #define NODE_JS_FLAG_NOWS		0x2		// No whitespace
 
-#define NODE_JS_DELIM_NL		L"\r\n"	// New line for JSON output
+#define NODE_JS_DELIM_NL		L"\n"	// New line for JSON output
 #define NODE_JS_DELIM_INDENT	L"  "	// Tab token for JSON output
 #define NODE_JS_DELIM_SPACE		L" "	// Space used between keys and values
 
