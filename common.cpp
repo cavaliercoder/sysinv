@@ -44,17 +44,17 @@ int AppendMultiString(LPTSTR *lpmszMulti, LPCTSTR szNew)
 		}
 	}
 
-	oldLength = i - 1;
-	newLength = oldLength + newSzLength;
-	newSize = sizeof(TCHAR) * (newLength + count + 2);
+	oldLength = i;
+	newLength = oldLength + newSzLength + 1;
+	newSize = sizeof(TCHAR) * (newLength + 1);
 
 	// Allocate memory
 	if (NULL == (mszResult = (LPTSTR)LocalAlloc(LPTR, newSize)))
 		return 0;
 
 	// Copy values
-	memcpy(mszResult, mszMulti, sizeof(TCHAR) * (oldLength + count));
-	memcpy(&mszResult[oldLength + count], szNew, sizeof(TCHAR) * (newSzLength));
+	memcpy(mszResult, mszMulti, sizeof(TCHAR) * oldLength);
+	memcpy(&mszResult[oldLength], szNew, sizeof(TCHAR) * (newSzLength));
 
 	// Release old pointer
 	LocalFree(mszMulti);
