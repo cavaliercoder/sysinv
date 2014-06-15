@@ -62,14 +62,12 @@ LPCTSTR BIOS_CHARACTERISTICS_EX2[] = {
 PNODE GetBiosDetail()
 {
 	PNODE node = NULL;
-
 	PRAW_SMBIOS_DATA smbios = GetSmbiosData();
 	PSMBIOS_STRUCT_HEADER header = NULL;
-
 	LPTSTR unicode = NULL;
 	TCHAR buffer[MAX_PATH + 1];
-
 	DWORD i = 0;
+	DWORD dwBuffer = 0;
 
 	header = GetNextStructureOfType(NULL, SMB_TABLE_BIOS);
 	if (NULL == header)
@@ -114,18 +112,20 @@ PNODE GetBiosDetail()
 			}
 		}
 
-		// v2.4 + Extentded characteristics
+		// v2.4 + Extended characteristics
 		if (2 < smbios->SMBIOSMajorVersion || (2 == smbios->SMBIOSMajorVersion && 4 <= smbios->SMBIOSMinorVersion)) {
 			// 0x12 Characterist extensions byte 1
+			dwBuffer = BYTE_AT_OFFSET(header, 0x12);
 			for (i = 0; i < ARRAYSIZE(BIOS_CHARACTERISTICS_EX1); i++) {
-				if (CHECK_BIT(BYTE_AT_OFFSET(header, 0x12), i)) {
+				if (CHECK_BIT(dwBuffer, i)) {
 					AppendMultiString(&unicode, BIOS_CHARACTERISTICS_EX1[i]);
 				}
 			}
 
 			// 0x12 Characterist extensions byte 2
+			dwBuffer = BYTE_AT_OFFSET(header, 0x13);
 			for (i = 0; i < ARRAYSIZE(BIOS_CHARACTERISTICS_EX2); i++) {
-				if (CHECK_BIT(BYTE_AT_OFFSET(header, 0x13), i)) {
+				if (CHECK_BIT(dwBuffer, i)) {
 					AppendMultiString(&unicode, BIOS_CHARACTERISTICS_EX2[i]);
 				}
 			}
