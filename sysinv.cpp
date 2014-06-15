@@ -84,10 +84,6 @@ int main(int argc, CHAR* argv[])
 	if (getHardware) {
 		hardware = node_append_new(root, L"Hardware", NODE_FLAG_PLACEHOLDER);
 
-		// System details (From SMBIOS)
-		node = GetBiosSystemDetail();
-		node_append_child(hardware, node);
-
 		// Virtualization info
 		node = GetVirtualizationDetail();
 		node_append_child(hardware, node);

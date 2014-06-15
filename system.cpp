@@ -20,11 +20,13 @@ PNODE GetSystemDetail()
 	TCHAR hostname[MAX_COMPUTERNAME_LENGTH + 1];
 	DWORD bufferSize = MAX_COMPUTERNAME_LENGTH + 1;
 	SYSTEM_INFO systemInfo;
-
+	PRAW_SMBIOS_DATA smbios = NULL;
+	PSMBIOS_STRUCT_HEADER smHeader = NULL;
 	SYSTEMTIME systemTime;
 	TCHAR szSystemTime[MAX_PATH + 1];
 	DWORD cursor = 0;
-
+	LPTSTR pszBuffer = NULL;
+	
 	PNODE node = node_alloc(L"System", 0);
 
 	// Get host name
@@ -65,71 +67,53 @@ PNODE GetSystemDetail()
 		node_att_set(node, L"Architecture", L"Unknown", 0);
 	}
 
-	return node;
-}
-
-// System Info Table (7.2)
-PNODE GetBiosSystemDetail()
-{
-	PNODE node = NULL;
-
-	PRAW_SMBIOS_DATA smbios = GetSmbiosData();
-	PSMBIOS_STRUCT_HEADER header = NULL;
-	
-	LPTSTR unicode = NULL;
-	DWORD i = 0;
-
-	header = GetNextStructureOfType(NULL, SMB_TABLE_SYSTEM);
-	if (NULL == header)
-		return node;
-
-	// v2.0+
-	if (2 <= smbios->SMBIOSMajorVersion) {
-		node = node_alloc(_T("SystemInfo"), 0);
-
+	// SMBIOS Info (Type 1)
+	smbios = GetSmbiosData();
+	if (NULL != (smHeader = GetNextStructureOfType(NULL, SMB_TABLE_SYSTEM))) {
 		// 0x04 Manufacturer
-		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x04));
-		node_att_set(node, _T("Manufacturer"), unicode, 0);
-		LocalFree(unicode);
+		pszBuffer = GetSmbiosString(smHeader, BYTE_AT_OFFSET(smHeader, 0x04));
+		node_att_set(node, _T("Manufacturer"), pszBuffer, 0);
+		LocalFree(pszBuffer);
 
 		// 0x05 Product Name
-		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x05));
-		node_att_set(node, _T("Product"), unicode, 0);
-		LocalFree(unicode);
+		pszBuffer = GetSmbiosString(smHeader, BYTE_AT_OFFSET(smHeader, 0x05));
+		node_att_set(node, _T("Product"), pszBuffer, 0);
+		LocalFree(pszBuffer);
 
 		// 0x06 Version String
-		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x06));
-		node_att_set(node, _T("Version"), unicode, 0);
-		LocalFree(unicode);
+		pszBuffer = GetSmbiosString(smHeader, BYTE_AT_OFFSET(smHeader, 0x06));
+		node_att_set(node, _T("Version"), pszBuffer, 0);
+		LocalFree(pszBuffer);
 
 		// 0x07 Serial Number
-		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x07));
-		node_att_set(node, _T("SerialNumber"), unicode, 0);
-		LocalFree(unicode);
+		pszBuffer = GetSmbiosString(smHeader, BYTE_AT_OFFSET(smHeader, 0x07));
+		node_att_set(node, _T("SerialNumber"), pszBuffer, 0);
+		LocalFree(pszBuffer);
 
-		// v2.1+
+
+		// SMBIOS v2.1+
 		if (2 < smbios->SMBIOSMajorVersion || (2 == smbios->SMBIOSMajorVersion && 1 <= smbios->SMBIOSMinorVersion)) {
 			// 0x08 UUID Byte Array
-			unicode = (LPTSTR)LocalAlloc(LPTR, sizeof(TCHAR)* 40);
-			StringFromGUID2(VAL_AT_OFFET(GUID, header, 0x08), unicode, 40);
-			node_att_set(node, _T("Uuid"), unicode, 0);
-			LocalFree(unicode);
+			pszBuffer = (LPTSTR)LocalAlloc(LPTR, sizeof(TCHAR) * 40);
+			StringFromGUID2(VAL_AT_OFFET(GUID, smHeader, 0x08), pszBuffer, 40);
+			node_att_set(node, _T("Uuid"), pszBuffer, 0);
+			LocalFree(pszBuffer);
 
 			// 0x18 Wake-up Type
-			node_att_set(node, _T("WakeUpType"), SAFE_INDEX(WAKE_UP_TYPE, BYTE_AT_OFFSET(header, 0x18)), 0);
+			node_att_set(node, _T("WakeUpType"), SAFE_INDEX(WAKE_UP_TYPE, BYTE_AT_OFFSET(smHeader, 0x18)), 0);
 		}
 
 		// v2.4+
 		if (2 < smbios->SMBIOSMajorVersion || (2 == smbios->SMBIOSMajorVersion && 4 <= smbios->SMBIOSMinorVersion)) {
 			// 0x19 SKU Number
-			unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x19));
-			node_att_set(node, _T("SkuNumber"), unicode, 0);
-			LocalFree(unicode);
+			pszBuffer = GetSmbiosString(smHeader, BYTE_AT_OFFSET(smHeader, 0x19));
+			node_att_set(node, _T("SkuNumber"), pszBuffer, 0);
+			LocalFree(pszBuffer);
 
 			// 0x1A SKU Number
-			unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x1A));
-			node_att_set(node, _T("Family"), unicode, 0);
-			LocalFree(unicode);
+			pszBuffer = GetSmbiosString(smHeader, BYTE_AT_OFFSET(smHeader, 0x1A));
+			node_att_set(node, _T("Family"), pszBuffer, 0);
+			LocalFree(pszBuffer);
 		}
 	}
 

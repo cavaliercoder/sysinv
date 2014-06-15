@@ -91,20 +91,19 @@ PNODE EnumBaseboards()
 		// 0x0D Board Type
 		node_att_set(node, _T("Type"), SAFE_INDEX(BOARD_TYPE, BYTE_AT_OFFSET(header, 0x0D)), 0);
 
-		// Children
+		// Append Children
 		slotsNode = node_append_new(node, _T("Slots"), NODE_FLAG_TABLE);
 		portsNode = node_append_new(node, _T("Ports"), NODE_FLAG_TABLE);
-
 		if (0 == BYTE_AT_OFFSET(header, 0x0E)) {
-			// Assume everything is a child
-			// Start with slots
-			while (NULL != (childHeader = GetNextStructureOfType(childHeader, SMB_TABLE_SLOTS))) {
-				node_append_child(slotsNode, GetSlotDetail(smbios, childHeader));
-			}
-
-			// Ports
+			// Assume everything is a child if 0x0E is 0
+			// Ports (Type 8)
 			while (NULL != (childHeader = GetNextStructureOfType(childHeader, SMB_TABLE_PORTS))) {
 				node_append_child(portsNode, GetPortDetail(smbios, childHeader));
+			}
+
+			// Slots (Type 9)
+			while (NULL != (childHeader = GetNextStructureOfType(childHeader, SMB_TABLE_SLOTS))) {
+				node_append_child(slotsNode, GetSlotDetail(smbios, childHeader));
 			}
 		}
 		else {
@@ -115,15 +114,14 @@ PNODE EnumBaseboards()
 
 				// Add node according to type
 				switch (childHeader->Type) {
-				case SMB_TABLE_SLOTS:
-					node_append_child(slotsNode, GetSlotDetail(smbios, childHeader));
-					break;
-
 				case SMB_TABLE_PORTS:
 					node_append_child(portsNode, GetPortDetail(smbios, childHeader));
 					break;
+
+				case SMB_TABLE_SLOTS:
+					node_append_child(slotsNode, GetSlotDetail(smbios, childHeader));
+					break;
 				}
-				
 			}
 		}
 	}

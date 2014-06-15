@@ -19,7 +19,6 @@ PNODE GetVirtualizationDetail();
 // SMBIOS functions
 PNODE GetSmbiosDetail();
 PNODE GetBiosDetail();
-PNODE GetBiosSystemDetail();
 PNODE EnumBaseboards();
 PNODE EnumChassis();
 PNODE EnumMemorySockets();
