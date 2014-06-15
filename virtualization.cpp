@@ -10,7 +10,7 @@ LOOKUP_ENTRY VIRT_PHYSICAL = { VIRT_PLATFORM_NONE, NULL, _T("Physical") };
 LOOKUP_ENTRY VIRT_UNKNOWN = { VIRT_PLATFORM_NONE, NULL, _T("Unknown") };
 
 LOOKUP_ENTRY VIRT_VENDORS[] = {
-		{ VIRT_PLATFORM_VMWARE, _T("vmware"), _T("VMWare") },
+		{ VIRT_PLATFORM_VMWARE, _T("vmware"), _T("VMware") },
 		{ VIRT_PLATFORM_VBOX, _T("virtualbox"), _T("VirtualBox") },
 		{ VIRT_PLATFORM_KVM, _T("kvm"), _T("KVM") },
 		{ VIRT_PLATFORM_QEMU, _T("bochs"), _T("Qemu (Emulated") },
