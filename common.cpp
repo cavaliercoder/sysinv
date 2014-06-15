@@ -64,6 +64,33 @@ int AppendMultiString(LPTSTR *lpmszMulti, LPCTSTR szNew)
 	return count + 1;
 }
 
+LPCTSTR wcsistr(LPCTSTR haystack, LPCTSTR needle)
+{
+	LPCTSTR result = NULL;
+	LPCTSTR h = NULL;
+	LPCTSTR n = NULL;
+
+	for (h = haystack, n = needle; *h; h++){
+		if (*n) {
+			if (towlower(*n) == towlower(*h)) {
+				if (NULL == result)
+					result = h;
+				n++;
+			}
+			else {
+				result = NULL;
+				n = needle;
+			}
+		}
+
+		else {
+			break;
+		}
+	}
+
+	return result;
+}
+
 void _SetError(LPCTSTR filename, LPCTSTR function, DWORD line, DWORD level, DWORD systemErrorCode, LPCTSTR message, ...)
 {
 	va_list args;

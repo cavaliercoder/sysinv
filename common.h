@@ -52,5 +52,6 @@ void _SetError(LPCTSTR filename, LPCTSTR function, DWORD line, DWORD level, DWOR
 PNODE EnumErrorLog();
 
 int AppendMultiString(LPTSTR *lpmszMulti, LPCTSTR szNew);
+LPCTSTR wcsistr(LPCTSTR haystack, LPCTSTR needle);
 
 #endif
