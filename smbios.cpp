@@ -48,10 +48,10 @@ PSMBIOS_STRUCT_HEADER GetNextStructure(PSMBIOS_STRUCT_HEADER previous)
 	// Return NULL is no data found
 	if (NULL == smbios)
 		return NULL;
-
+	
 	// Return first table if previous was NULL
 	if (NULL == previous)
-		return (PSMBIOS_STRUCT_HEADER)smbios->SMBIOSTableData;
+		return (PSMBIOS_STRUCT_HEADER)(&smbios->SMBIOSTableData[0]);
 
 	// Move to the end of the formatted structure
 	c = ((PBYTE)previous) + previous->Length;
@@ -90,7 +90,7 @@ PSMBIOS_STRUCT_HEADER GetStructureByHandle(WORD handle)
 {
 	PSMBIOS_STRUCT_HEADER header = NULL;
 
-	while (NULL != GetNextStructure(header))
+	while (NULL != (header = GetNextStructure(header)))
 		if (handle == header->Handle)
 			return header;
 

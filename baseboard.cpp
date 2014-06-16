@@ -41,6 +41,7 @@ PNODE EnumBaseboards()
 	PRAW_SMBIOS_DATA smbios = GetSmbiosData();
 	PSMBIOS_STRUCT_HEADER header = NULL;
 	PSMBIOS_STRUCT_HEADER childHeader = NULL;
+	WORD childHandle = 0;
 	
 	LPTSTR unicode = NULL;
 	DWORD i = 0;
@@ -110,17 +111,23 @@ PNODE EnumBaseboards()
 			// Enumerate explicitely linked children
 			for (i = 0; i < BYTE_AT_OFFSET(header, 0x0E); i++) {
 				// Fetch child by handle
-				childHeader = GetStructureByHandle(WORD_AT_OFFSET(header, 0x0F + (i * 0x02)));
+				childHandle = WORD_AT_OFFSET(header, 0x0F + (i * 0x02));
 
-				// Add node according to type
-				switch (childHeader->Type) {
-				case SMB_TABLE_PORTS:
-					node_append_child(portsNode, GetPortDetail(smbios, childHeader));
-					break;
+				if (NULL == childHeader) {
+					SetError(ERR_CRIT, 0, _T("Failed to get SMBIOS table with handle 0x%X  which was specified as a child of Baseboard 0x%X"), childHandle, header->Handle);
+					continue;
+				}
+				else {
+					// Add node according to type
+					switch (childHeader->Type) {
+					case SMB_TABLE_PORTS:
+						node_append_child(portsNode, GetPortDetail(smbios, childHeader));
+						break;
 
-				case SMB_TABLE_SLOTS:
-					node_append_child(slotsNode, GetSlotDetail(smbios, childHeader));
-					break;
+					case SMB_TABLE_SLOTS:
+						node_append_child(slotsNode, GetSlotDetail(smbios, childHeader));
+						break;
+					}
 				}
 			}
 		}
