@@ -3,7 +3,7 @@
 #include "smbios.h"
 
 // 7.1.1 BIOS Characteristics 
-LPCTSTR BIOS_CHARACTERISTICS[] = {
+static LPCTSTR BIOS_CHARACTERISTICS[] = {
 	_T("Reserved"),													// Bit 0
 	_T("Reserved"),													// Bit 1
 	_T("Unknown"),													// Bit 2
@@ -41,7 +41,7 @@ LPCTSTR BIOS_CHARACTERISTICS[] = {
 };
 
 // 7.1.2.1 BIOS Characteristics Extension Byte 1
-LPCTSTR BIOS_CHARACTERISTICS_EX1[] = {
+static LPCTSTR BIOS_CHARACTERISTICS_EX1[] = {
 	_T("ACPI is supported"),										// Bit 0
 	_T("USB Legacy is supported"),									// Bit 1
 	_T("AGP is supported"),											// Bit 2
@@ -49,7 +49,7 @@ LPCTSTR BIOS_CHARACTERISTICS_EX1[] = {
 };
 
 // 7.1.2.2 BIOS Characteristics Extension Byte 2 
-LPCTSTR BIOS_CHARACTERISTICS_EX2[] = {
+static LPCTSTR BIOS_CHARACTERISTICS_EX2[] = {
 	_T("BIOS Boot Specification is supported"),						// Bit 0
 	_T("Function key-initiated network service boot is supported"),	// Bit 1
 	_T("Enable targeted content distribution"),						// Bit 2
@@ -74,76 +74,78 @@ PNODE GetBiosDetail()
 		return node;
 
 	// v2.0+
-	if (2 <= smbios->SMBIOSMajorVersion) {
-		node = node_alloc(_T("Bios"), 0);
+	if (header->Length < 0x12) goto parsed;
+	node = node_alloc(_T("Bios"), 0);
 
-		// 0x04 Vendor
-		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x04));
-		node_att_set(node, _T("Vendor"), unicode, 0);
-		LocalFree(unicode);
+	// 0x04 Vendor
+	unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x04));
+	node_att_set(node, _T("Vendor"), unicode, 0);
+	LocalFree(unicode);
 
-		// 0x05 BIOS Version
-		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x05));
-		node_att_set(node, _T("Version"), unicode, 0);
-		LocalFree(unicode);
+	// 0x05 BIOS Version
+	unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x05));
+	node_att_set(node, _T("Version"), unicode, 0);
+	LocalFree(unicode);
 
-		// 0x06 Starting Address Segment
-		swprintf(buffer, _T("0x%X"), WORD_AT_OFFSET(header, 0x06));
-		node_att_set(node, _T("Address"), buffer, 0);
+	// 0x06 Starting Address Segment
+	swprintf(buffer, _T("0x%X"), WORD_AT_OFFSET(header, 0x06));
+	node_att_set(node, _T("Address"), buffer, 0);
 
-		// 0x06 Runtime Size
-		swprintf(buffer, _T("%u"), 16 * (0x10000 - WORD_AT_OFFSET(header, 0x06)));
-		node_att_set(node, _T("RuntimeSizeBytes"), buffer, 0);
+	// 0x06 Runtime Size
+	swprintf(buffer, _T("%u"), 16 * (0x10000 - WORD_AT_OFFSET(header, 0x06)));
+	node_att_set(node, _T("RuntimeSizeBytes"), buffer, 0);
 
-		// 0x08 BIOS Release Date
-		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x08));
-		node_att_set(node, _T("Date"), unicode, 0);
-		LocalFree(unicode);
+	// 0x08 BIOS Release Date
+	unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x08));
+	node_att_set(node, _T("Date"), unicode, 0);
+	LocalFree(unicode);
 
-		// 0x09 BIOS ROM Size
-		swprintf(buffer, _T("%llu"), 64 * (1 + BYTE_AT_OFFSET(header, 0x09)));
-		node_att_set(node, _T("RomSizeKb"), buffer, 0);
+	// 0x09 BIOS ROM Size
+	swprintf(buffer, _T("%llu"), 64 * (1 + BYTE_AT_OFFSET(header, 0x09)));
+	node_att_set(node, _T("RomSizeKb"), buffer, 0);
 
-		// 0x0A Characteristics
-		unicode = NULL;
-		for (i = 0; i < ARRAYSIZE(BIOS_CHARACTERISTICS); i++) {
-			if (CHECK_BIT(QWORD_AT_OFFSET(header, 0x0A), i)) {
-				AppendMultiString(&unicode, BIOS_CHARACTERISTICS[i]);
-			}
-		}
-
-		// v2.4 + Extended characteristics
-		if (2 < smbios->SMBIOSMajorVersion || (2 == smbios->SMBIOSMajorVersion && 4 <= smbios->SMBIOSMinorVersion)) {
-			// 0x12 Characterist extensions byte 1
-			dwBuffer = BYTE_AT_OFFSET(header, 0x12);
-			for (i = 0; i < ARRAYSIZE(BIOS_CHARACTERISTICS_EX1); i++) {
-				if (CHECK_BIT(dwBuffer, i)) {
-					AppendMultiString(&unicode, BIOS_CHARACTERISTICS_EX1[i]);
-				}
-			}
-
-			// 0x12 Characterist extensions byte 2
-			dwBuffer = BYTE_AT_OFFSET(header, 0x13);
-			for (i = 0; i < ARRAYSIZE(BIOS_CHARACTERISTICS_EX2); i++) {
-				if (CHECK_BIT(dwBuffer, i)) {
-					AppendMultiString(&unicode, BIOS_CHARACTERISTICS_EX2[i]);
-				}
-			}
-		}
-		node_att_set_multi(node, _T("Characteristics"), unicode, 0);
-		LocalFree(unicode);
-
-		// v2.4 +
-		if (2 < smbios->SMBIOSMajorVersion || (2 == smbios->SMBIOSMajorVersion && 4 <= smbios->SMBIOSMinorVersion)) {
-			// 0x14, 0x15 System BIOS Release
-			swprintf(buffer, _T("%u.%u"), BYTE_AT_OFFSET(header, 0x14), BYTE_AT_OFFSET(header, 0x15));
-			node_att_set(node, _T("Revision"), buffer, 0);
-
-			// 0x16, 0x17 Embedded Controller Firmware Release
-			swprintf(buffer, _T("%u.%u"), BYTE_AT_OFFSET(header, 0x16), BYTE_AT_OFFSET(header, 0x17));
-			node_att_set(node, _T("FirmwareRevision"), buffer, 0);
+	// 0x0A Characteristics
+	unicode = NULL;
+	for (i = 0; i < ARRAYSIZE(BIOS_CHARACTERISTICS); i++) {
+		if (CHECK_BIT(QWORD_AT_OFFSET(header, 0x0A), i)) {
+			AppendMultiString(&unicode, BIOS_CHARACTERISTICS[i]);
 		}
 	}
+
+	// v2.4 +
+	// 0x12 Characterist extensions byte 1
+	if (header->Length < 0x13) goto got_chars;
+	dwBuffer = BYTE_AT_OFFSET(header, 0x12);
+	for (i = 0; i < ARRAYSIZE(BIOS_CHARACTERISTICS_EX1); i++) {
+		if (CHECK_BIT(dwBuffer, i)) {
+			AppendMultiString(&unicode, BIOS_CHARACTERISTICS_EX1[i]);
+		}
+	}
+
+	// 0x12 Characterist extensions byte 2
+	if (header->Length < 0x14) goto got_chars;
+	dwBuffer = BYTE_AT_OFFSET(header, 0x13);
+	for (i = 0; i < ARRAYSIZE(BIOS_CHARACTERISTICS_EX2); i++) {
+		if (CHECK_BIT(dwBuffer, i)) {
+			AppendMultiString(&unicode, BIOS_CHARACTERISTICS_EX2[i]);
+		}
+	}
+
+got_chars:
+	node_att_set_multi(node, _T("Characteristics"), unicode, 0);
+	LocalFree(unicode);
+
+	// 0x14, 0x15 System BIOS Release
+	if (header->Length < 0x16) goto parsed;
+	swprintf(buffer, _T("%u.%u"), BYTE_AT_OFFSET(header, 0x14), BYTE_AT_OFFSET(header, 0x15));
+	node_att_set(node, _T("Revision"), buffer, 0);
+
+	// 0x16, 0x17 Embedded Controller Firmware Release
+	if (header->Length < 0x18) goto parsed;
+	swprintf(buffer, _T("%u.%u"), BYTE_AT_OFFSET(header, 0x16), BYTE_AT_OFFSET(header, 0x17));
+	node_att_set(node, _T("FirmwareRevision"), buffer, 0);
+
+parsed:
 
 	return node;
 }

@@ -3,7 +3,7 @@
 #include "smbios.h"
 
 // 7.4.1 System Enclosure or Chassis Types 
-LPTSTR CHASSIS_TYPES[] = {
+static LPTSTR CHASSIS_TYPES[] = {
 	_T("Unknown"),					// 0x00 Invalid
 	_T("Other"),					// 0x01
 	_T("Unknown"),					// 0x02
@@ -37,7 +37,7 @@ LPTSTR CHASSIS_TYPES[] = {
 };
 
 // 7.4.2 System Enclosure or Chassis States
-LPCTSTR CHASSIS_STATES[] = {
+static LPCTSTR CHASSIS_STATES[] = {
 	_T("Unknown"),							// 0x00 Invalid
 	_T("Other"),							// 0x01 Other 
 	_T("Unknown"),							// 0x02 Unknown 
@@ -48,7 +48,7 @@ LPCTSTR CHASSIS_STATES[] = {
 };
 
 // 7.4.3 System Enclosure or Chassis Security Status 
-LPCTSTR CHASSIS_SECURITY_STATUS[] = {
+static LPCTSTR CHASSIS_SECURITY_STATUS[] = {
 	_T("Unknown"),							// 0x00 Invalid
 	_T("Other"),							// 0x01 Other
 	_T("Unknown"),							// 0x02 Unknown
@@ -71,74 +71,76 @@ PNODE EnumChassis()
 
 	while (NULL != (header = GetNextStructureOfType(header, SMB_TABLE_CHASSIS))) {
 		// v2.0+
-		if (2 <= smbios->SMBIOSMajorVersion) {
-			node = node_append_new(parentNode, _T("Chassis"), 0);
+		if (header->Length < 0x09) continue;
+		node = node_append_new(parentNode, _T("Chassis"), 0);
 
-			// 0x04 Manufacturer
-			unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x04));
-			node_att_set(node, _T("Manufacturer"), unicode, 0);
-			LocalFree(unicode);
+		// 0x04 Manufacturer
+		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x04));
+		node_att_set(node, _T("Manufacturer"), unicode, 0);
+		LocalFree(unicode);
 
-			// 0x05 Chassis Type
-			node_att_set(node, _T("Type"), SAFE_INDEX(CHASSIS_TYPES, BYTE_AT_OFFSET(header, 0x05)), 0);
+		// 0x05 Chassis Type
+		node_att_set(node, _T("Type"), SAFE_INDEX(CHASSIS_TYPES, BYTE_AT_OFFSET(header, 0x05)), 0);
 
-			// 0x06 Version String
-			unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x06));
-			node_att_set(node, _T("Version"), unicode, 0);
-			LocalFree(unicode);
+		// 0x06 Version String
+		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x06));
+		node_att_set(node, _T("Version"), unicode, 0);
+		LocalFree(unicode);
 
-			// 0x07 Serial Number
-			unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x06));
-			node_att_set(node, _T("SerialNumber"), unicode, 0);
-			LocalFree(unicode);
+		// 0x07 Serial Number
+		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x06));
+		node_att_set(node, _T("SerialNumber"), unicode, 0);
+		LocalFree(unicode);
 
-			// 0x08 Asset Tag
-			unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x08));
-			node_att_set(node, _T("AssetTag"), unicode, 0);
-			LocalFree(unicode);
+		// 0x08 Asset Tag
+		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x08));
+		node_att_set(node, _T("AssetTag"), unicode, 0);
+		LocalFree(unicode);
 
-			// v2.1+
-			if (2 < smbios->SMBIOSMajorVersion || (2 == smbios->SMBIOSMajorVersion && 1 <= smbios->SMBIOSMinorVersion)) {
-				// 0x09 Boot-up state
-				node_att_set(node, _T("BootupState"), SAFE_INDEX(CHASSIS_STATES, BYTE_AT_OFFSET(header, 0x09)), 0);
+		// v2.1+
+		if (header->Length < 0x0D) continue;
 
-				// 0x0A Power supply state
-				node_att_set(node, _T("PowerSupplyState"), SAFE_INDEX(CHASSIS_STATES, BYTE_AT_OFFSET(header, 0x0A)), 0);
+		// 0x09 Boot-up state
+		node_att_set(node, _T("BootupState"), SAFE_INDEX(CHASSIS_STATES, BYTE_AT_OFFSET(header, 0x09)), 0);
 
-				// 0x0B Thermal State
-				node_att_set(node, _T("ThermalState"), SAFE_INDEX(CHASSIS_STATES, BYTE_AT_OFFSET(header, 0x0B)), 0);
+		// 0x0A Power supply state
+		node_att_set(node, _T("PowerSupplyState"), SAFE_INDEX(CHASSIS_STATES, BYTE_AT_OFFSET(header, 0x0A)), 0);
 
-				// 0x0C Security State
-				node_att_set(node, _T("SecurityState"), SAFE_INDEX(CHASSIS_SECURITY_STATUS, BYTE_AT_OFFSET(header, 0x0C)), 0);
-			}
+		// 0x0B Thermal State
+		node_att_set(node, _T("ThermalState"), SAFE_INDEX(CHASSIS_STATES, BYTE_AT_OFFSET(header, 0x0B)), 0);
 
-			// v2.3+
-			if (2 < smbios->SMBIOSMajorVersion || (2 == smbios->SMBIOSMajorVersion && 3 <= smbios->SMBIOSMinorVersion)) {
-				// 0x0D OEM Defined
-				swprintf(buffer, _T("0x%X"), DWORD_AT_OFFSET(header, 0x0D));
-				node_att_set(node, _T("OemInfo"), buffer, 0);
-				
-				// 0x11 Height (U|1.75"|4.445cm)
-				if (0 != BYTE_AT_OFFSET(header, 0x11)) {
-					swprintf(buffer, _T("%u"), BYTE_AT_OFFSET(header, 0x11));
-					node_att_set(node, _T("HeightU"), buffer, 0);
-				}
+		// 0x0C Security State
+		node_att_set(node, _T("SecurityState"), SAFE_INDEX(CHASSIS_SECURITY_STATUS, BYTE_AT_OFFSET(header, 0x0C)), 0);
 
-				// 0x12 Number of power cords
-				if (0 != BYTE_AT_OFFSET(header, 0x12)) {
-					swprintf(buffer, _T("%u"), BYTE_AT_OFFSET(header, 0x12));
-					node_att_set(node, _T("PowerCordCount"), buffer, 0);
-				}
-			}
 
-			// v2.7+
-			if (2 < smbios->SMBIOSMajorVersion || (2 == smbios->SMBIOSMajorVersion && 7 <= smbios->SMBIOSMinorVersion)) {
-				// 0x15 + n*m SKU Number
-				unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x15 + BYTE_AT_OFFSET(header, 0x15)));
-				node_att_set(node, _T("SkuNumber"), unicode, 0);
-				LocalFree(unicode);
-			}
-		}		
+		// v2.3+
+		if (header->Length < 0x11) continue;
+		
+		// 0x0D OEM Defined
+		swprintf(buffer, _T("0x%X"), DWORD_AT_OFFSET(header, 0x0D));
+		node_att_set(node, _T("OemInfo"), buffer, 0);
+		
+		if (header->Length < 0x13) continue;
+
+		// 0x11 Height (U|1.75"|4.445cm)
+		if (0 != BYTE_AT_OFFSET(header, 0x11)) {
+			swprintf(buffer, _T("%u"), BYTE_AT_OFFSET(header, 0x11));
+			node_att_set(node, _T("HeightU"), buffer, 0);
+		}
+
+		// 0x12 Number of power cords
+		if (0 != BYTE_AT_OFFSET(header, 0x12)) {
+			swprintf(buffer, _T("%u"), BYTE_AT_OFFSET(header, 0x12));
+			node_att_set(node, _T("PowerCordCount"), buffer, 0);
+		}
+
+		// v2.7+
+		if (header->Length < 0x15) continue;
+
+		// 0x15 + n*m SKU Number
+		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x15 + BYTE_AT_OFFSET(header, 0x15)));
+		node_att_set(node, _T("SkuNumber"), unicode, 0);
+		LocalFree(unicode);
 	}
 
 	return parentNode;

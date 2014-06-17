@@ -7,7 +7,7 @@
 #define BUFLEN	MAX_PATH + 1
 
 // 7.5.1 Processor Information — Processor Type 
-LPCTSTR PROC_TYPES[] = {
+static LPCTSTR PROC_TYPES[] = {
 	_T("Invalid"),						// 0x00 Invalid
 	_T("Other"),						// 0x01 Other
 	_T("Unknown"),						// 0x02 Unknown
@@ -18,7 +18,7 @@ LPCTSTR PROC_TYPES[] = {
 };
 
 // 7.5.2 Processor Information — Processor Family 
-LOOKUP_ENTRY PROCESSOR_FAMILIES[] = {
+static LOOKUP_ENTRY PROCESSOR_FAMILIES[] = {
 		{ 0x01, NULL, _T("Other") },	// 1
 		{ 0x02, NULL, _T("Unknown") },	// 2
 		{ 0x03, NULL, _T("8086") },	// 3
@@ -223,7 +223,7 @@ LOOKUP_ENTRY PROCESSOR_FAMILIES[] = {
 };
 
 // 7.5.5 Processor Information — Processor Upgrade
-LPTSTR PROCESSOR_UPGRADE[] = {
+static LPTSTR PROCESSOR_UPGRADE[] = {
 	_T("Invalid"),						// 0x00 Invalid
 	_T("Other"),						// 0x01
 	_T("Unknown"),						// 0x02
@@ -284,7 +284,7 @@ LPCTSTR PROCESSOR_CHARACTERISTICS[] = {
 };
 
 // Intel Table 3-20
-LOOKUP_ENTRY PROC_FEATURES_ECX[] = {
+static LOOKUP_ENTRY PROC_FEATURES_ECX[] = {
 		{ 0, _T("SSE3"), _T("Streaming SIMD Extensions 3") },
 		{ 1, _T("PCLMULQDQ"), _T("PCLMULQDQ instruction") },
 		{ 2, _T("DTES64 "), _T("64-bit DS Area") },
@@ -318,7 +318,7 @@ LOOKUP_ENTRY PROC_FEATURES_ECX[] = {
 };
 
 // Intel Table 3-21
-LOOKUP_ENTRY PROC_FEATURES_EDX[] = {
+static LOOKUP_ENTRY PROC_FEATURES_EDX[] = {
 		{ 0, _T("FPU"), _T("x87 FPU on Chip") },
 		{ 1, _T("VME"), _T("Virtual-8086 Mode Enhancement") },
 		{ 2, _T("DE"), _T("Debugging Extensions") },
@@ -352,7 +352,7 @@ LOOKUP_ENTRY PROC_FEATURES_EDX[] = {
 
 // Processor vendor codes
 // Courtesy: http://en.wikipedia.org/wiki/CPUID#EAX.3D0:_Get_vendor_ID
-LOOKUP_ENTRY PROC_VENDORS[] = {
+static LOOKUP_ENTRY PROC_VENDORS[] = {
 		{ 1, _T("AMDisbetter!"), _T("AMD") },
 		{ 2, _T("AuthenticAMD"), _T("AMD") },
 		{ 3, _T("CentaurHauls"), _T("Centaur") },

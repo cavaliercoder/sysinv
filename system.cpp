@@ -3,7 +3,7 @@
 #include "smbios.h"
 
 // 7.2.2 System — Wake-up Type 
-LPCTSTR WAKE_UP_TYPE[] = {
+static LPCTSTR WAKE_UP_TYPE[] = {
 	_T("Reserved"),						// 0x00 Reserved
 	_T("Other"),						// 0x01 Other
 	_T("Unknown"),						// 0x02 Unknown
@@ -97,32 +97,32 @@ PNODE GetSystemDetail()
 		node_att_set(node, _T("SerialNumber"), pszBuffer, 0);
 		LocalFree(pszBuffer);
 
-
 		// SMBIOS v2.1+
-		if (2 < smbios->SMBIOSMajorVersion || (2 == smbios->SMBIOSMajorVersion && 1 <= smbios->SMBIOSMinorVersion)) {
-			// 0x08 UUID Byte Array
-			pszBuffer = (LPTSTR)LocalAlloc(LPTR, sizeof(TCHAR) * 40);
-			StringFromGUID2(VAL_AT_OFFET(GUID, smHeader, 0x08), pszBuffer, 40);
-			node_att_set(node, _T("Uuid"), pszBuffer, 0);
-			LocalFree(pszBuffer);
+		if (smHeader->Length < 0x19) goto smbios_parsed;
 
-			// 0x18 Wake-up Type
-			node_att_set(node, _T("WakeUpType"), SAFE_INDEX(WAKE_UP_TYPE, BYTE_AT_OFFSET(smHeader, 0x18)), 0);
-		}
+		// 0x08 UUID Byte Array
+		pszBuffer = (LPTSTR)LocalAlloc(LPTR, sizeof(TCHAR) * 40);
+		StringFromGUID2(VAL_AT_OFFET(GUID, smHeader, 0x08), pszBuffer, 40);
+		node_att_set(node, _T("Uuid"), pszBuffer, 0);
+		LocalFree(pszBuffer);
+
+		// 0x18 Wake-up Type
+		node_att_set(node, _T("WakeUpType"), SAFE_INDEX(WAKE_UP_TYPE, BYTE_AT_OFFSET(smHeader, 0x18)), 0);
 
 		// v2.4+
-		if (2 < smbios->SMBIOSMajorVersion || (2 == smbios->SMBIOSMajorVersion && 4 <= smbios->SMBIOSMinorVersion)) {
-			// 0x19 SKU Number
-			pszBuffer = GetSmbiosString(smHeader, BYTE_AT_OFFSET(smHeader, 0x19));
-			node_att_set(node, _T("SkuNumber"), pszBuffer, 0);
-			LocalFree(pszBuffer);
+		if (smHeader->Length < 0x1B) goto smbios_parsed;
+		// 0x19 SKU Number
+		pszBuffer = GetSmbiosString(smHeader, BYTE_AT_OFFSET(smHeader, 0x19));
+		node_att_set(node, _T("SkuNumber"), pszBuffer, 0);
+		LocalFree(pszBuffer);
 
-			// 0x1A SKU Number
-			pszBuffer = GetSmbiosString(smHeader, BYTE_AT_OFFSET(smHeader, 0x1A));
-			node_att_set(node, _T("Family"), pszBuffer, 0);
-			LocalFree(pszBuffer);
-		}
+		// 0x1A Family
+		pszBuffer = GetSmbiosString(smHeader, BYTE_AT_OFFSET(smHeader, 0x1A));
+		node_att_set(node, _T("Family"), pszBuffer, 0);
+		LocalFree(pszBuffer);
 	}
+
+smbios_parsed:
 
 	return node;
 }

@@ -3,7 +3,7 @@
 #include "smbios.h"
 #include "baseboard.h"
 
-LPCTSTR SLOT_TYPE_STRINGS[] = {
+static LPCTSTR SLOT_TYPE_STRINGS[] = {
 	_T("Invalid"),								// 0x00 Invalid
 	_T("Other"),								// 0x01 Other 
 	_T("Unknown"),								// 0x02 Unknown 
@@ -49,7 +49,7 @@ LPCTSTR SLOT_TYPE_STRINGS[] = {
 	_T("PCI Express Gen 3 x16")					// 0xB6 PCI Express Gen 3 x16
 };
 
-LPCTSTR SLOT_DATA_BUS_WIDTH[] = {
+static LPCTSTR SLOT_DATA_BUS_WIDTH[] = {
 	_T("Invalid"),								// 0x00 Invalid
 	_T("Other"),								// 0x01 Other 
 	_T("Unknown"),								// 0x02 Unknown 
@@ -67,7 +67,7 @@ LPCTSTR SLOT_DATA_BUS_WIDTH[] = {
 	_T("32x or x32")							// 0x0E 32x or x32 
 };
 
-LPCTSTR SLOT_CURRENT_USAGE[] = {
+static LPCTSTR SLOT_CURRENT_USAGE[] = {
 	_T("Invalid"),								// 0x00 Invalid
 	_T("Other"),								// 0x01 Other 
 	_T("Unknown"),								// 0x02 Unknown 
@@ -75,7 +75,7 @@ LPCTSTR SLOT_CURRENT_USAGE[] = {
 	_T("In use")								// 0x04 In use
 };
 
-LPCTSTR SLOT_LENGTH[] = {
+static LPCTSTR SLOT_LENGTH[] = {
 	_T("Invalid"),								// 0x00 Invalid
 	_T("Other"),								// 0x01 Other 
 	_T("Unknown"),								// 0x02 Unknown 
@@ -83,8 +83,7 @@ LPCTSTR SLOT_LENGTH[] = {
 	_T("Long Length")							// 0x04 Long Length
 };
 
-
-LPCTSTR SLOT_CHARACTERISTICS1[] = {
+static LPCTSTR SLOT_CHARACTERISTICS1[] = {
 	_T("Characteristics unknown."),					// Bit 0
 	_T("Provides 5.0 volts."),						// Bit 1
 	_T("Provides 3.3 volts."),						// Bit 2
@@ -95,7 +94,7 @@ LPCTSTR SLOT_CHARACTERISTICS1[] = {
 	_T("PC Card slot supports Modem Ring Resume."),	// Bit 7
 };
 
-LPCTSTR SLOT_CHARACTERISTICS2[] = {
+static LPCTSTR SLOT_CHARACTERISTICS2[] = {
 	_T("PCI slot supports Power Management Event(PME#) signal."),	// Bit 0
 	_T("Slot supports hot - plug devices."),	// Bit 1
 	_T("PCI slot supports SMBus signal.")		// Bit 2

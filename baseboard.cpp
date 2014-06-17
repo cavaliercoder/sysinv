@@ -4,7 +4,7 @@
 #include "baseboard.h"
 
 // 7.3.1 Baseboard — feature flags
-LPCTSTR BOARD_FEATURES[] = {
+static LPCTSTR BOARD_FEATURES[] = {
 	_T("Hosting board"),					// Bit 0
 	_T("Requires daughter board"),			// Bit 1
 	_T("Removable"),						// Bit 2
@@ -13,7 +13,7 @@ LPCTSTR BOARD_FEATURES[] = {
 };
 
 // 7.3.2 Baseboard — Board Type
-LPCTSTR BOARD_TYPE[] = {
+static LPCTSTR BOARD_TYPE[] = {
 	_T("Invalid"),							// 0x00 Invalid
 	_T("Unknown"),							// 0x01 Unknown
 	_T("Other"),							// 0x02 Other
@@ -49,9 +49,7 @@ PNODE EnumBaseboards()
 
 	while (NULL != (header = GetNextStructureOfType(header, SMB_TABLE_BASEBOARD))) {
 		node = node_append_new(baseBoardsNode, _T("BaseBoard"), 0);
-
 		
-
 		// 0x04 Manufacturer
 		if (header->Length < 0x05) goto get_children;
 		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x04));
