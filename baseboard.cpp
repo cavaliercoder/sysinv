@@ -40,6 +40,7 @@ PNODE EnumBaseboards()
 
 	PRAW_SMBIOS_DATA smbios = GetSmbiosData();
 	PSMBIOS_STRUCT_HEADER header = NULL;
+	DWORD childCount = 0;
 	PSMBIOS_STRUCT_HEADER childHeader = NULL;
 	WORD childHandle = 0;
 	
@@ -49,32 +50,40 @@ PNODE EnumBaseboards()
 	while (NULL != (header = GetNextStructureOfType(header, SMB_TABLE_BASEBOARD))) {
 		node = node_append_new(baseBoardsNode, _T("BaseBoard"), 0);
 
+		
+
 		// 0x04 Manufacturer
+		if (header->Length < 0x05) goto get_children;
 		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x04));
 		node_att_set(node, _T("Manufacturer"), unicode, 0);
 		LocalFree(unicode);
 
 		// 0x05 Product
+		if (header->Length < 0x06) goto get_children;
 		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x05));
 		node_att_set(node, _T("Product"), unicode, 0);
 		LocalFree(unicode);
 
 		// 0x06 Version String
+		if (header->Length < 0x07) goto get_children;
 		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x06));
 		node_att_set(node, _T("Version"), unicode, 0);
 		LocalFree(unicode);
 
 		// 0x07 Serial Number
+		if (header->Length < 0x08) goto get_children;
 		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x07));
 		node_att_set(node, _T("SerialNumber"), unicode, 0);
 		LocalFree(unicode);
 
 		// 0x08 Asset Tag
+		if (header->Length < 0x09) goto get_children;
 		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x08));
 		node_att_set(node, _T("AssetTag"), unicode, 0);
 		LocalFree(unicode);
 
 		// 0x09 Feature flags
+		if (header->Length < 0x0A) goto get_children;
 		unicode = NULL;
 		for (i = 0; i < ARRAYSIZE(BOARD_FEATURES); i++) {
 			if (CHECK_BIT(BYTE_AT_OFFSET(header, 0x09), i)) {
@@ -85,17 +94,23 @@ PNODE EnumBaseboards()
 		LocalFree(unicode);
 
 		// 0x0A Location in Chassis
+		if (header->Length < 0x0B) goto get_children;
 		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x0A));
 		node_att_set(node, _T("Location"), unicode, 0);
 		LocalFree(unicode);
 			
 		// 0x0D Board Type
+		if (header->Length < 0x0E) goto get_children;
 		node_att_set(node, _T("Type"), SAFE_INDEX(BOARD_TYPE, BYTE_AT_OFFSET(header, 0x0D)), 0);
 
 		// Append Children
+		childCount = header->Length < 0x0F ? 0 : BYTE_AT_OFFSET(header, 0x0E);
+
+	get_children:
+
 		slotsNode = node_append_new(node, _T("Slots"), NODE_FLAG_TABLE);
 		portsNode = node_append_new(node, _T("Ports"), NODE_FLAG_TABLE);
-		if (0 == BYTE_AT_OFFSET(header, 0x0E)) {
+		if (0 == childCount) {
 			// Assume everything is a child if 0x0E is 0
 			// Ports (Type 8)
 			while (NULL != (childHeader = GetNextStructureOfType(childHeader, SMB_TABLE_PORTS))) {
@@ -109,9 +124,14 @@ PNODE EnumBaseboards()
 		}
 		else {
 			// Enumerate explicitely linked children
-			for (i = 0; i < BYTE_AT_OFFSET(header, 0x0E); i++) {
+			for (i = 0; i < childCount; i++) {
+				// Prevent overflow
+				if (header->Length < (0x0F +(i * sizeof(WORD))))
+					break;
+
 				// Fetch child by handle
-				childHandle = WORD_AT_OFFSET(header, 0x0F + (i * 0x02));
+				childHandle = WORD_AT_OFFSET(header, 0x0F + (i * sizeof(WORD)));
+				childHeader = GetStructureByHandle(childHandle);
 
 				if (NULL == childHeader) {
 					SetError(ERR_CRIT, 0, _T("Failed to get SMBIOS table with handle 0x%X  which was specified as a child of Baseboard 0x%X"), childHandle, header->Handle);
