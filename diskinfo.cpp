@@ -201,7 +201,7 @@ PNODE GetDiskDetail(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 		swprintf(strBuffer, L"%.0fGB", f);
 		node_att_set(node, L"SizeGb", strBuffer, 0);
 
-		geoNode = node_append_new(node, L"Geometry", 0);
+		geoNode = node_append_new(node, L"Geometry", NODE_FLAG_ATT_GROUP);
 
 		swprintf(strBuffer, L"%llu", diskGeometry->Geometry.Cylinders);
 		node_att_set(geoNode, L"TotalCylinders", strBuffer, 0);
@@ -279,7 +279,7 @@ PNODE GetDiskDetail(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 	
 	// Append SCSI Address
 	if (NULL != scsiAddress) {
-		scsiNode = node_alloc(_T("ScsiAddress"), 0);
+		scsiNode = node_alloc(_T("ScsiAddress"), NODE_FLAG_ATT_GROUP);
 
 		swprintf(strBuffer, _T("%u"), scsiAddress->PortNumber);
 		node_att_set(scsiNode, _T("PortNumber"), strBuffer, 0); // AKA Adapter

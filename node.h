@@ -17,9 +17,10 @@
 #define NODE_FLAG_PLACEHOLDER	0x1		// Node is a placeholder with no attributes
 #define NODE_FLAG_TABLE			0x2		// Node represents an array of tabular rows
 #define NODE_FLAG_TABLE_ENTRY	0x4		// Node represents a row of tabular data
+#define NODE_FLAG_ATT_GROUP		0x08	// This node is a grouping of attributes belonging to the parent node
 
 #define NODE_ATT_FLAG_KEY		0x1		// Attribute is a key field for the parent node
-#define NODE_ATT_FLAG_ARRAY		0x2		// Attribute value is a multistring array terminated by a zero length string.
+#define NODE_ATT_FLAG_ARRAY		0x2		// Attribute value is a multistring array terminated by a zero length string
 
 #define NODE_XML_FLAG_NODEC		0x1		// No XML Document Declaration				
 #define NODE_XML_FLAG_NOWS		0x2		// No whitespace
