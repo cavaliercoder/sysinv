@@ -26,7 +26,8 @@ PNODE GetSystemDetail()
 	TCHAR szSystemTime[MAX_PATH + 1];
 	DWORD cursor = 0;
 	LPTSTR pszBuffer = NULL;
-	
+	BOOL isWow64;
+
 	PNODE node = node_alloc(L"System", 0);
 
 	// Get host name
@@ -66,6 +67,12 @@ PNODE GetSystemDetail()
 	default:
 		node_att_set(node, L"Architecture", L"Unknown", 0);
 	}
+
+	// Make sure 64bit agent is run on 64bit systems
+#ifndef _WIN64
+	if(IsWow64Process(GetCurrentProcess(), &isWow64) && isWow64)
+		SetError(ERR_WARN, 0, _T("Using the 32bit agent version on a 64bit system may return inaccurate results. Please use the 64bit version."));
+#endif
 
 	// SMBIOS Info (Type 1)
 	smbios = GetSmbiosData();

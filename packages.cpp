@@ -89,7 +89,7 @@ PNODE EnumPackages()
 	}
 
 	if (ERROR_NO_MORE_ITEMS != ret) {
-		SetError(ERR_WARN, ret, _T("Failed to enumerate installed products"));
+		SetError(ERR_CRIT, ret, _T("Failed to enumerate installed products"));
 	}
 
 	return packages;
