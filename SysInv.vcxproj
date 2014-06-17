@@ -165,7 +165,6 @@
     <ClCompile Include="chassis.cpp" />
     <ClCompile Include="cluster.cpp" />
     <ClCompile Include="common.cpp" />
-    <ClCompile Include="hotfixes.cpp" />
     <ClCompile Include="memory.cpp" />
     <ClCompile Include="packages.cpp" />
     <ClCompile Include="ports.cpp" />

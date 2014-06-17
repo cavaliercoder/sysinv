@@ -1,6 +1,14 @@
 #include "stdafx.h"
 #include "sysinv.h"
-#include "Ntddscsi.h"
+
+#pragma comment(lib, "Setupapi.lib")
+
+#include <SetupAPI.h>
+#include <devguid.h>
+#include <regstr.h>
+#include <WinIoCtl.h>
+#include <ntddscsi.h>
+#include <ObjBase.h>
 
 PNODE GetDiskDetail(__in PNODE parent, HDEVINFO hDevInfo, DWORD index);
 

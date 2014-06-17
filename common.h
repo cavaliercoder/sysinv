@@ -25,6 +25,9 @@
 #define SetError(level, systemErrorCode, message, ...)	_SetError(NULL, __FUNCTIONW__, __LINE__, level, systemErrorCode, message, __VA_ARGS__)
 #endif
 
+#define MALLOC(uBytes)					LocalAlloc(LPTR, uBytes)
+#define FREE(p)							LocalFree(p)
+
 #define CHECK_BIT(var,n)				((var) & (1 << (n)))
 #define SAFE_INDEX(var, i)				var[ARRAYSIZE(var) > i ? i : 0]
 

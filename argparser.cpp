@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "argparser.h"
+#include <stdlib.h>
 
 int arg_is_switch(char *arg);
 

@@ -2,6 +2,8 @@
 #include "sysinv.h"
 #include "smbios.h"
 
+#include <ObjBase.h>
+
 // 7.2.2 System — Wake-up Type 
 static LPCTSTR WAKE_UP_TYPE[] = {
 	_T("Reserved"),						// 0x00 Reserved

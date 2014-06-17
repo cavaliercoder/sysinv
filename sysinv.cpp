@@ -2,11 +2,14 @@
 #include "sysinv.h"
 #include "argparser.h"
 #include "version.h"
+#include "smbios.h"
 
 #define OUT_LIST	0x1
 #define OUT_XML		0x2
 #define OUT_JSON	0x3
 #define OUT_WALK	0x4
+
+int HotFixTest();
 
 void print_usage(int ret);
 
@@ -108,7 +111,7 @@ int main(int argc, CHAR* argv[])
 		node = EnumBaseboards();
 		node_append_child(hardware, node);
 		
-
+		// Memory
 		node = EnumMemorySockets();
 		node_append_child(hardware, node);
 
@@ -123,6 +126,10 @@ int main(int argc, CHAR* argv[])
 		// Get disks
 		node = EnumDisks();
 		node_append_child(hardware, node);
+
+		// Get network adapters
+		//node = EnumNetworkAdapters();
+		//node_append_child(hardware, node);
 	}
 
 	if (getSoftware) {

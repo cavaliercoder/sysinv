@@ -1,20 +1,24 @@
 #include "stdafx.h"
 #include "common.h"
 #include "node.h"
-#include "smbios.h"
 
+// Hardware
 PNODE EnumSmbiosTables();
 PNODE EnumPackages();
 PNODE EnumProcessors();
-PNODE EnumDisks();
+PNODE EnumDisks(); 
+PNODE EnumNetworkAdapters();
+
 PNODE EnumVolumes();
 PNODE EnumClusterServices();
 
+// Software
 PNODE GetAgentDetail();
 PNODE GetSystemDetail();
 PNODE GetOperatingSystemDetail();
-
 PNODE GetVirtualizationDetail();
+// Configuration
+
 
 // SMBIOS functions
 PNODE GetSmbiosDetail();

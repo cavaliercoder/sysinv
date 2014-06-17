@@ -11,9 +11,8 @@
 #include <tchar.h>
 
 // TODO: reference additional headers your program requires here
-#include <Windows.h>
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 
-#pragma comment(lib, "Setupapi.lib")
-#include <SetupAPI.h>
-#include <devguid.h>
-#include <regstr.h>
+#include <Windows.h>

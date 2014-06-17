@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "sysinv.h"
 
+#include <WinIoCtl.h>
+
 PNODE GetVolumeDetail(__in PNODE parent, __in LPTSTR volumeName);
 HANDLE GetVolumeHandle(LPWSTR volumePath);
 LPTSTR GetNextStringInMulti(LPTSTR multiString);
