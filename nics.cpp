@@ -286,7 +286,7 @@ static LOOKUP_ENTRY IF_TYPES[] = {
 };
 
 // http://www.ietf.org/rfc/rfc2863.txt Pg 31
-static LOOKUP_ENTRY IF_OPER_STATUSES[] {
+static LOOKUP_ENTRY IF_OPER_STATUSES[] = {
 		{ 1, _T("Up"), NULL },
 		{ 2, _T("Down"), NULL },
 		{ 3, _T("Testing"), NULL},
@@ -297,10 +297,23 @@ static LOOKUP_ENTRY IF_OPER_STATUSES[] {
 };
 
 // NET_IF_CONNECTION_TYPE
-static LOOKUP_ENTRY IF_CONN_TYPES[] {
+static LOOKUP_ENTRY IF_CONN_TYPES[] = {
 		{ NET_IF_CONNECTION_DEDICATED, _T("Dedicated"), NULL },
 		{ NET_IF_CONNECTION_PASSIVE, _T("Passive"), NULL },
 		{ NET_IF_CONNECTION_DEMAND, _T("On-Demand"), NULL }
+};
+
+static LOOKUP_ENTRY IF_FLAGS[] = {
+		{ IP_ADAPTER_DDNS_ENABLED, NULL, _T("Dynamic DNS is enabled on this adapter.") },
+		{ IP_ADAPTER_REGISTER_ADAPTER_SUFFIX, NULL, _T("Register the DNS suffix for this adapter.") },
+		{ IP_ADAPTER_DHCP_ENABLED, NULL, _T("The Dynamic Host Configuration Protocol (DHCP) is enabled on this adapter.") },
+		{ IP_ADAPTER_RECEIVE_ONLY, NULL, _T("The adapter is a receive-only adapter.") },
+		{ IP_ADAPTER_NO_MULTICAST, NULL, _T("The adapter is not a multicast recipient.") },
+		{ IP_ADAPTER_IPV6_OTHER_STATEFUL_CONFIG, NULL, _T("The adapter contains other IPv6-specific stateful configuration information.") },
+		{ IP_ADAPTER_NETBIOS_OVER_TCPIP_ENABLED, NULL, _T("The adapter is enabled for NetBIOS over TCP/IP.") },
+		{ IP_ADAPTER_IPV4_ENABLED, NULL, _T("The adapter is enabled for IPv4.") },
+		{ IP_ADAPTER_IPV6_ENABLED, NULL, _T("The adapter is enabled for IPv6.") },
+		{ IP_ADAPTER_IPV6_MANAGE_ADDRESS_CONFIG, NULL, _T("The adapter is enabled for IPv6 managed address configuration.") },
 };
 
 PNODE EnumNetworkAdapters()
@@ -310,6 +323,7 @@ PNODE EnumNetworkAdapters()
 	ULONG bufferSize = BUFFER_SIZE;
 	PIP_ADAPTER_ADDRESSES pAddresses = (PIP_ADAPTER_ADDRESSES) MALLOC(bufferSize);
 	PIP_ADAPTER_ADDRESSES pCurrent = pAddresses;
+	PIP_ADAPTER_UNICAST_ADDRESS pUnicast = NULL;
 	ULONG result = 0;
 	TCHAR szBuffer[SZBUFFERLEN];
 	LPTSTR pszBuffer = NULL;
@@ -317,7 +331,7 @@ PNODE EnumNetworkAdapters()
 	PLOOKUP_ENTRY lookupResult = NULL;
 
 	// Get network adapters
-	while (ERROR_BUFFER_OVERFLOW == (result = GetAdaptersAddresses(AF_UNSPEC, 0, NULL, pAddresses, &bufferSize))){
+	while (ERROR_BUFFER_OVERFLOW == (result = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, pAddresses, &bufferSize))){
 		FREE(pAddresses);
 		pAddresses = (PIP_ADAPTER_ADDRESSES)MALLOC(bufferSize);
 	}
@@ -330,7 +344,7 @@ PNODE EnumNetworkAdapters()
 
 	// Parse each adapter
 	while (NULL != pCurrent) {
-		nicNode = node_append_new(nicsNode, _T("Adapter"), NODE_FLAG_TABLE_ENTRY);
+		nicNode = node_append_new(nicsNode, _T("NetworkAdapter"), NODE_FLAG_TABLE_ENTRY);
 
 		SWPRINTF(szBuffer, _T("%u"), pCurrent->IfIndex);
 		node_att_set(nicNode, _T("Ipv4Index"), szBuffer, NODE_ATT_FLAG_KEY);
@@ -395,6 +409,19 @@ PNODE EnumNetworkAdapters()
 
 		SWPRINTF(szBuffer, _T("%I64u"), pCurrent->ReceiveLinkSpeed);
 		node_att_set(nicNode, _T("ReceiveSpeed"), szBuffer, 0);
+
+		// Unicast addresses
+		pUnicast = pCurrent->FirstUnicastAddress;
+		// TODO: Add network adapter IPv4/6 addresses
+
+		// Flags
+		pszBuffer = NULL;
+		for (i = 0; i < ARRAYSIZE(IF_FLAGS); i++) {
+			if (CHECK_BIT(pCurrent->Flags, IF_FLAGS[i].Index))
+				AppendMultiString(&pszBuffer, IF_FLAGS[i].Description);
+		}
+		node_att_set_multi(nicNode, _T("Flags"), pszBuffer, 0);
+		LocalFree(pszBuffer);
 
 		pCurrent = pCurrent->Next;
 	}
