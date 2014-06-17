@@ -19,6 +19,8 @@
 #define ERR_CRIT		0x04
 #define ERR_FATAL		0x08
 
+#define SZBUFFERLEN		0x100
+
 #ifdef _DEBUG
 #define SetError(level, systemErrorCode, message, ...)	_SetError(__FILEW__, __FUNCTIONW__, __LINE__, level, systemErrorCode, message, __VA_ARGS__)
 #else
@@ -27,6 +29,12 @@
 
 #define MALLOC(uBytes)					LocalAlloc(LPTR, uBytes)
 #define FREE(p)							LocalFree(p)
+
+#define SWPRINTF(buffer, format, ...)	swprintf_s((wchar_t *) &buffer[0], (size_t) ARRAYSIZE(buffer), format, __VA_ARGS__)
+
+#define UTF8_TO_UNICODE(utf8, unicode, bufferSize)		MultiByteToWideChar(CP_UTF8, 0, utf8, -1, unicode, bufferSize)
+
+#define Lookup(table, index)			_Lookup(&table[0], ARRAYSIZE(table), index)
 
 #define CHECK_BIT(var,n)				((var) & (1 << (n)))
 #define SAFE_INDEX(var, i)				var[ARRAYSIZE(var) > i ? i : 0]
@@ -50,6 +58,14 @@ typedef struct _ErrorMessage
 	LPTSTR Message;
 } ERROR_MESSAGE, * PERROR_MESSAGE;
 
+typedef struct _LookupEntry
+{
+	DWORD Index;
+	LPCTSTR Code;
+	LPCTSTR Description;
+} LOOKUP_ENTRY, *PLOOKUP_ENTRY;
+
+PLOOKUP_ENTRY _Lookup(PLOOKUP_ENTRY table, DWORD tableLength, DWORD index);
 
 void _SetError(LPCTSTR filename, LPCTSTR function, DWORD line, DWORD level, DWORD systemErrorCode, LPCTSTR message, ...);
 PNODE EnumErrorLog();

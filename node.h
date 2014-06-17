@@ -21,6 +21,7 @@
 
 #define NODE_ATT_FLAG_KEY		0x1		// Attribute is a key field for the parent node
 #define NODE_ATT_FLAG_ARRAY		0x2		// Attribute value is a multistring array terminated by a zero length string
+#define NODE_ATT_FLAG_ERROR		0x80	// Attribute value is invalid or the result of an error
 
 #define NODE_XML_FLAG_NODEC		0x1		// No XML Document Declaration				
 #define NODE_XML_FLAG_NOWS		0x2		// No whitespace

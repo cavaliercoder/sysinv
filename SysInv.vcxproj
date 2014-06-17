@@ -166,6 +166,7 @@
     <ClCompile Include="cluster.cpp" />
     <ClCompile Include="common.cpp" />
     <ClCompile Include="memory.cpp" />
+    <ClCompile Include="nics.cpp" />
     <ClCompile Include="packages.cpp" />
     <ClCompile Include="ports.cpp" />
     <ClCompile Include="processors.cpp" />

@@ -128,8 +128,8 @@ int main(int argc, CHAR* argv[])
 		node_append_child(hardware, node);
 
 		// Get network adapters
-		//node = EnumNetworkAdapters();
-		//node_append_child(hardware, node);
+		node = EnumNetworkAdapters();
+		node_append_child(hardware, node);
 	}
 
 	if (getSoftware) {

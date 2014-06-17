@@ -244,3 +244,13 @@ PNODE EnumErrorLog()
 
 	return logNode;
 }
+
+PLOOKUP_ENTRY _Lookup(PLOOKUP_ENTRY table, DWORD tableLength, DWORD index)
+{
+	DWORD i = 0;
+	for (i = 0; i < tableLength; i++)
+		if (table[i].Index == index)
+			return &table[i];
+
+	return NULL;
+}

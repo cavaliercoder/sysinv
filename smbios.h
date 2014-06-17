@@ -60,13 +60,6 @@ typedef struct _SmbiosStructHeader
 	WORD Handle;
 } SMBIOS_STRUCT_HEADER, *PSMBIOS_STRUCT_HEADER;
 
-typedef struct _LookupEntry
-{
-	DWORD Index;
-	LPCTSTR Code;
-	LPCTSTR Description;
-} LOOKUP_ENTRY, *PLOOKUP_ENTRY;
-
 /*
  * Functions
  */
