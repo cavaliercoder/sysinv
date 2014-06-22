@@ -30,7 +30,8 @@
 #define MALLOC(uBytes)					LocalAlloc(LPTR, uBytes)
 #define FREE(p)							LocalFree(p)
 
-#define SWPRINTF(buffer, format, ...)	swprintf_s((wchar_t *) &buffer[0], (size_t) ARRAYSIZE(buffer), format, __VA_ARGS__)
+#define SWPRINTF(szBuffer, format, ...)	swprintf_s((wchar_t *)&szBuffer[0], (size_t)ARRAYSIZE(szBuffer), format, __VA_ARGS__)
+#define PRINTIPV4(szBuffer, dwIpv4)		swprintf_s((wchar_t *)&szBuffer[0], (size_t)ARRAYSIZE(szBuffer), _T("%u.%u.%u.%u"), dwIpv4 & 0xFF, (dwIpv4 >> 8) & 0xFF, (dwIpv4 >> 16) & 0xFF, (dwIpv4 >> 24) & 0xFF)
 
 #define UTF8_TO_UNICODE(utf8, unicode, bufferSize)		MultiByteToWideChar(CP_UTF8, 0, utf8, -1, unicode, bufferSize)
 

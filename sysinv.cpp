@@ -152,6 +152,9 @@ int main(int argc, CHAR* argv[])
 		// Get network configuration
 		node_append_child(network, EnumNetworkInterfaces());
 
+		// Get network routes
+		node_append_child(network, EnumNetworkRoutes());
+
 		// Get Failover Cluster Node
 		node = EnumClusterServices();
 		if (NULL != node)

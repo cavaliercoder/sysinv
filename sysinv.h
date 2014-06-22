@@ -16,6 +16,7 @@ PNODE GetVirtualizationDetail();
 
 // Configuration
 PNODE EnumNetworkInterfaces();
+PNODE EnumNetworkRoutes();
 PNODE EnumVolumes();
 PNODE EnumClusterServices();
 
