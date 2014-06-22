@@ -92,21 +92,21 @@ PNODE EnumIpv4Routes()
 		
 		// Destination IP
 		PRINTIPV4(szBuffer, pRoute->dwForwardDest);
-		node_att_set(routeNode, _T("Destination"), szBuffer, 0);
+		node_att_set(routeNode, _T("Destination"), szBuffer, NAFLG_FMT_IPADDR);
 
 		PRINTIPV4(szBuffer, pRoute->dwForwardMask);
-		node_att_set(routeNode, _T("DestinationMask"), szBuffer, 0);
+		node_att_set(routeNode, _T("DestinationMask"), szBuffer, NAFLG_FMT_IPADDR);
 		
 		// Interface index
 		SWPRINTF(szBuffer, _T("%u"), pRoute->dwForwardIfIndex);
-		node_att_set(routeNode, _T("InterfaceIndex"), szBuffer, 0);
+		node_att_set(routeNode, _T("InterfaceIndex"), szBuffer, NAFLG_FMT_NUMERIC);
 
 		PRINTIPV4(szBuffer, pRoute->dwForwardNextHop);
-		node_att_set(routeNode, _T("NextHop"), szBuffer, 0);
+		node_att_set(routeNode, _T("NextHop"), szBuffer, NAFLG_FMT_IPADDR);
 
 		// Primary Metric
 		SWPRINTF(szBuffer, _T("%u"), pRoute->dwForwardMetric1);
-		node_att_set(routeNode, _T("Metric"), szBuffer, 0);
+		node_att_set(routeNode, _T("Metric"), szBuffer, NAFLG_FMT_NUMERIC);
 	}
 
 	// Cleanup
