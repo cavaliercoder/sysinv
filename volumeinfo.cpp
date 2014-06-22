@@ -12,7 +12,7 @@ PNODE EnumVolumes()
 	HANDLE fvh;
 	TCHAR lpszVolumeName[MAX_PATH + 1];
 	BOOL moreVolumes;
-	PNODE node = node_alloc(L"Volumes", NODE_FLAG_TABLE);
+	PNODE node = node_alloc(L"Volumes", NFLG_TABLE);
 
 	moreVolumes = (INVALID_HANDLE_VALUE != (fvh = FindFirstVolume((LPWSTR)lpszVolumeName, MAX_PATH)));
 	if(moreVolumes) {
@@ -44,8 +44,8 @@ PNODE GetVolumeDetail(__in PNODE parent, __in LPTSTR volumeName)
 	UINT driveType;
 
 	// Allocate new node
-	volumeNode = node_alloc(L"Volume", NODE_FLAG_TABLE_ENTRY);
-	node_att_set(volumeNode, L"Name", volumeName, NODE_ATT_FLAG_KEY);
+	volumeNode = node_alloc(L"Volume", NFLG_TABLE_ROW);
+	node_att_set(volumeNode, L"Name", volumeName, NAFLG_KEY);
 
 	// Get volume type
 	driveType = GetDriveType(volumeName);
@@ -157,7 +157,7 @@ PNODE GetVolumeDetail(__in PNODE parent, __in LPTSTR volumeName)
 		}
 
 		if(0 < extents->NumberOfDiskExtents) {
-			extentsNode = node_alloc(L"DiskExtents", NODE_FLAG_TABLE);
+			extentsNode = node_alloc(L"DiskExtents", NFLG_TABLE);
 			node_append_child(volumeNode, extentsNode);
 			for(i = 0; i < extents->NumberOfDiskExtents; i++) {
 				extent = extents->Extents[i];
@@ -166,11 +166,11 @@ PNODE GetVolumeDetail(__in PNODE parent, __in LPTSTR volumeName)
 				swprintf(buffer[2], L"0x%lX", extent.StartingOffset.QuadPart);
 				swprintf(buffer[3], L"0x%lX", extent.ExtentLength.QuadPart);
 			
-				extentNode = node_append_new(extentsNode, L"Extent", NODE_FLAG_TABLE_ENTRY);			
-				node_att_set(extentNode, L"Index", buffer[0], NODE_ATT_FLAG_KEY);
-				node_att_set(extentNode, L"DiskIndex", buffer[1], 0);
-				node_att_set(extentNode, L"StartingOffset", buffer[2], 0);
-				node_att_set(extentNode, L"Length", buffer[3], 0);
+				extentNode = node_append_new(extentsNode, L"Extent", NFLG_TABLE_ROW);			
+				node_att_set(extentNode, L"Index", buffer[0], NAFLG_KEY | NAFLG_FMT_NUMERIC);
+				node_att_set(extentNode, L"DiskIndex", buffer[1], NAFLG_FMT_NUMERIC);
+				node_att_set(extentNode, L"StartingOffset", buffer[2], NAFLG_FMT_HEX);
+				node_att_set(extentNode, L"Length", buffer[3], NAFLG_FMT_HEX);
 			}
 		}
 

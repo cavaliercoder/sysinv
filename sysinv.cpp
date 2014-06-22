@@ -85,7 +85,7 @@ int main(int argc, CHAR* argv[])
 	node_append_child(root, agent);
 
 	if (getHardware) {
-		hardware = node_append_new(root, L"Hardware", NODE_FLAG_PLACEHOLDER);
+		hardware = node_append_new(root, L"Hardware", NFLG_PLACEHOLDER);
 
 		// Virtualization info
 		node = GetVirtualizationDetail();
@@ -129,7 +129,7 @@ int main(int argc, CHAR* argv[])
 	}
 
 	if (getSoftware) {
-		software = node_append_new(root, L"Software", NODE_FLAG_PLACEHOLDER);
+		software = node_append_new(root, L"Software", NFLG_PLACEHOLDER);
 		
 		// Get OS info
 		node = GetOperatingSystemDetail();
@@ -141,9 +141,9 @@ int main(int argc, CHAR* argv[])
 	}
 	
 	if (getConfiguration) {
-		configuration = node_append_new(root, L"Configuration", NODE_FLAG_PLACEHOLDER);
-		storage = node_append_new(configuration, L"Storage", NODE_FLAG_PLACEHOLDER);
-		network = node_append_new(configuration, L"Network", NODE_FLAG_PLACEHOLDER);
+		configuration = node_append_new(root, L"Configuration", NFLG_PLACEHOLDER);
+		storage = node_append_new(configuration, L"Storage", NFLG_PLACEHOLDER);
+		network = node_append_new(configuration, L"Network", NFLG_PLACEHOLDER);
 
 		// Get volume info
 		node = EnumVolumes();

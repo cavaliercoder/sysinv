@@ -216,7 +216,7 @@ PNODE GetOsIdentityDetail()
 	// Get Cryptography GUID
 	if (ERROR_SUCCESS == (result = RegOpenKeyEx(HKEY_LOCAL_MACHINE, pszSubKey, 0, KEY_READ, &hKey))){
 		if (ERROR_SUCCESS == (result = RegQueryValueEx(hKey, _T("MachineGuid"), NULL, NULL, (LPBYTE)&machineGuid, &machineGuidLen))) {
-			node_att_set(identityNode, _T("MachineGuid"), machineGuid, 0);
+			node_att_set(identityNode, _T("MachineGuid"), machineGuid, NAFLG_FMT_GUID);
 		}
 
 		RegCloseKey(hKey);

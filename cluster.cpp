@@ -29,8 +29,8 @@ PNODE EnumClusterServices()
 		goto clean_cluster;
 
 	// Create cluster node
-	clusterNode = node_alloc(_T("Cluster"), NODE_FLAG_PLACEHOLDER);
-	node_att_set(clusterNode, _T("Name"), buffer, NODE_ATT_FLAG_KEY);
+	clusterNode = node_alloc(_T("Cluster"), 0);
+	node_att_set(clusterNode, _T("Name"), buffer, NAFLG_KEY);
 
 	// Parse version
 	_swprintf(buffer, _T("%u.%u.%u"), clusterVersionInfo.MajorVersion, clusterVersionInfo.MinorVersion, clusterVersionInfo.BuildNumber);
@@ -77,10 +77,10 @@ PNODE EnumClusterNodes(HCLUSTER hCluster)
 	if (NULL == (hEnumerator = ClusterOpenEnum(hCluster, CLUSTER_ENUM_NODE)))
 		return nodesNode;
 
-	nodesNode = node_alloc(_T("Nodes"), NODE_FLAG_TABLE);
+	nodesNode = node_alloc(_T("Nodes"), NFLG_TABLE);
 	while (ERROR_NO_MORE_ITEMS != (res = ClusterEnum(hEnumerator, index++, &resType, (LPWSTR)&buffer, &bufferLen))) {
-		nodeNode = node_alloc(_T("Node"), NODE_FLAG_TABLE_ENTRY);
-		node_att_set(nodeNode, _T("Name"), buffer, NODE_ATT_FLAG_KEY);
+		nodeNode = node_alloc(_T("Node"), NFLG_TABLE_ROW);
+		node_att_set(nodeNode, _T("Name"), buffer, NAFLG_KEY);
 
 		node_append_child(nodesNode, nodeNode);
 
@@ -108,7 +108,7 @@ PNODE EnumClusterGroups(HCLUSTER hCluster)
 	if (NULL == (hEnumerator = ClusterOpenEnum(hCluster, CLUSTER_ENUM_GROUP)))
 		return groupsNode;
 
-	groupsNode = node_alloc(_T("Groups"), NODE_FLAG_TABLE);
+	groupsNode = node_alloc(_T("Groups"), NFLG_TABLE);
 	while (ERROR_NO_MORE_ITEMS != (res = ClusterEnum(hEnumerator, index++, &resType, (LPWSTR)&buffer, &bufferLen))) {
 		if(NULL != (groupNode = GetClusterGroupDetail(hCluster, buffer)))
 			node_append_child(groupsNode, groupNode);
@@ -134,15 +134,15 @@ PNODE GetClusterGroupDetail(HCLUSTER hCluster, LPWSTR groupName)
 	DWORD resType = 0;
 	DWORD index = 0;
 	
-	groupNode = node_alloc(_T("Group"), NODE_FLAG_TABLE_ENTRY);
-	node_att_set(groupNode, _T("Name"), groupName, NODE_ATT_FLAG_KEY);
+	groupNode = node_alloc(_T("Group"), NFLG_TABLE_ROW);
+	node_att_set(groupNode, _T("Name"), groupName, NAFLG_KEY);
 
 	// Get handle to cluster group
 	if (NULL != (hGroup = OpenClusterGroup(hCluster, groupName))) {
 		
 		// Get resources
 		if (NULL != (hGroupEnum = ClusterGroupOpenEnum(hGroup, CLUSTER_GROUP_ENUM_CONTAINS))) {
-			resourcesNode = node_append_new(groupNode, _T("Resources"), NODE_FLAG_TABLE);
+			resourcesNode = node_append_new(groupNode, _T("Resources"), NFLG_TABLE);
 
 			while (ERROR_NO_MORE_ITEMS != (res = ClusterGroupEnum(hGroupEnum, index++, &resType, (LPWSTR) &buffer, &bufferLen))) {
 				// Ger resource node
@@ -168,8 +168,8 @@ PNODE GetClusterResourceDetail(HCLUSTER hCluster, LPWSTR resourceName)
 	TCHAR buffer[MAX_PATH + 1];
 	DWORD bufferLen = MAX_PATH + 1;
 
-	resourceNode = node_alloc(_T("Resource"), NODE_FLAG_TABLE_ENTRY);
-	node_att_set(resourceNode, _T("Name"), resourceName, NODE_ATT_FLAG_KEY);
+	resourceNode = node_alloc(_T("Resource"), NFLG_TABLE_ROW);
+	node_att_set(resourceNode, _T("Name"), resourceName, NAFLG_KEY);
 
 	// Get handle to resource
 	if (NULL != (hResource = OpenClusterResource(hCluster, resourceName))) {

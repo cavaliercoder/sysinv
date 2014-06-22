@@ -27,7 +27,7 @@ PNODE EnumDisks()
 		return NULL;
 	}
 	
-	PNODE node = node_alloc(L"Disks", NODE_FLAG_TABLE);
+	PNODE node = node_alloc(L"Disks", NFLG_TABLE);
 	while(NULL != GetDiskDetail(node, hDevInfo, index++))
 	{}
 
@@ -55,7 +55,7 @@ PNODE GetDiskDetail(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 	DWORD error = 0;
 
 	// Create return node
-	node = node_alloc(L"Disk", NODE_FLAG_TABLE_ENTRY);
+	node = node_alloc(L"Disk", NFLG_TABLE_ROW);
 
 	// SP_DEVINFO_DATA *deviceInfoData
 	// Get device info (used for getting device properties from the registry)
@@ -162,7 +162,7 @@ PNODE GetDiskDetail(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 	 * Start building node
 	 */
 	swprintf(strBuffer, L"%d", deviceNumber->DeviceNumber);
-	node_att_set(node, L"Index", strBuffer, NODE_ATT_FLAG_KEY);
+	node_att_set(node, L"Index", strBuffer, NAFLG_KEY | NAFLG_FMT_NUMERIC);
 
 	swprintf(strBuffer, L"\\\\.\\PHYSICALDRIVE%u", deviceNumber->DeviceNumber);
 	node_att_set(node, L"DeviceId", strBuffer, 0);
@@ -203,33 +203,33 @@ PNODE GetDiskDetail(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 	// Append Geometry
 	if (NULL != diskGeometry) {
 		swprintf(strBuffer, L"%llu", diskGeometry->DiskSize.QuadPart);
-		node_att_set(node, L"Size", strBuffer, 0);
+		node_att_set(node, L"Size", strBuffer, NAFLG_FMT_BYTES);
 
 		f = (diskGeometry->DiskSize.QuadPart / 1073741824);
 		swprintf(strBuffer, L"%.0fGB", f);
-		node_att_set(node, L"SizeGb", strBuffer, 0);
+		node_att_set(node, L"SizeGb", strBuffer, NAFLG_FMT_GBYTES);
 
-		geoNode = node_append_new(node, L"Geometry", NODE_FLAG_ATT_GROUP);
+		geoNode = node_append_new(node, L"Geometry", NFLG_ATTGROUP);
 
 		swprintf(strBuffer, L"%llu", diskGeometry->Geometry.Cylinders);
-		node_att_set(geoNode, L"TotalCylinders", strBuffer, 0);
+		node_att_set(geoNode, L"TotalCylinders", strBuffer, NAFLG_FMT_NUMERIC);
 
 		q = diskGeometry->Geometry.Cylinders.QuadPart * diskGeometry->Geometry.TracksPerCylinder;
 		swprintf(strBuffer, L"%llu", q);
-		node_att_set(geoNode, L"TotalTracks", strBuffer, 0);
+		node_att_set(geoNode, L"TotalTracks", strBuffer, NAFLG_FMT_NUMERIC);
 
 		q *= diskGeometry->Geometry.SectorsPerTrack;
 		swprintf(strBuffer, L"%llu", q);
-		node_att_set(geoNode, L"TotalSectors", strBuffer, 0);
+		node_att_set(geoNode, L"TotalSectors", strBuffer, NAFLG_FMT_NUMERIC);
 
 		swprintf(strBuffer, L"%u", diskGeometry->Geometry.TracksPerCylinder);
-		node_att_set(geoNode, L"TracksPerCylinder", strBuffer, 0);
+		node_att_set(geoNode, L"TracksPerCylinder", strBuffer, NAFLG_FMT_NUMERIC);
 
 		swprintf(strBuffer, L"%u", diskGeometry->Geometry.SectorsPerTrack);
-		node_att_set(geoNode, L"SectorsPerTrack", strBuffer, 0);
+		node_att_set(geoNode, L"SectorsPerTrack", strBuffer, NAFLG_FMT_NUMERIC);
 
 		swprintf(strBuffer, L"%u", diskGeometry->Geometry.BytesPerSector);
-		node_att_set(geoNode, L"BytesPerSector", strBuffer, 0);
+		node_att_set(geoNode, L"BytesPerSector", strBuffer, NAFLG_FMT_NUMERIC);
 	}
 	
 	// Append partition layout
@@ -240,13 +240,13 @@ PNODE GetDiskDetail(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 			swprintf(strBuffer, L"%u", diskLayout->Mbr.Signature);
 			node_att_set(node, L"Signature", strBuffer, 0);
 			swprintf(strBuffer, L"%08X", diskLayout->Mbr.Signature);
-			node_att_set(node, L"SignatureHex", strBuffer, NODE_ATT_FLAG_KEY);
+			node_att_set(node, L"SignatureHex", strBuffer, NAFLG_KEY | NAFLG_FMT_HEX);
 			break;
 
 		case PARTITION_STYLE_GPT:
 			node_att_set(node, L"PartitionStyle", L"GPT", 0);
 			StringFromCLSID(diskLayout->Gpt.DiskId, &oleBuffer);
-			node_att_set(node, L"Guid", oleBuffer, NODE_ATT_FLAG_KEY);
+			node_att_set(node, L"Guid", oleBuffer, NAFLG_KEY | NAFLG_FMT_GUID);
 			CoTaskMemFree(oleBuffer);
 			break;
 
@@ -255,51 +255,51 @@ PNODE GetDiskDetail(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 			break;
 		}
 
-		partsNode = node_append_new(node, L"Partitions", NODE_FLAG_TABLE);
+		partsNode = node_append_new(node, L"Partitions", NFLG_TABLE);
 		for(i = 0; i < diskLayout->PartitionCount; i++) {
 			// Ignore '0' partition placeholders
 			if(diskLayout->PartitionEntry[i].PartitionNumber > 0) {
 				partCount++;
-				partNode = node_append_new(partsNode, L"Partition", NODE_FLAG_TABLE_ENTRY);
+				partNode = node_append_new(partsNode, L"Partition", NFLG_TABLE_ROW);
 
 				swprintf(strBuffer, L"%d", diskLayout->PartitionEntry[i].PartitionNumber);
-				node_att_set(partNode, L"Number", strBuffer, NODE_ATT_FLAG_KEY);
+				node_att_set(partNode, L"Number", strBuffer, NAFLG_KEY | NAFLG_FMT_NUMERIC);
 
 				swprintf(strBuffer, L"%llu", diskLayout->PartitionEntry[i].StartingOffset.QuadPart);
-				node_att_set(partNode, L"StartOffset", strBuffer, 0);
+				node_att_set(partNode, L"StartOffset", strBuffer, NAFLG_FMT_NUMERIC);
 
 				swprintf(strBuffer, L"0x%llX", diskLayout->PartitionEntry[i].StartingOffset.QuadPart);
-				node_att_set(partNode, L"StartOffsetHex", strBuffer, 0);
+				node_att_set(partNode, L"StartOffsetHex", strBuffer, NAFLG_FMT_HEX);
 
 				swprintf(strBuffer, L"%llu", diskLayout->PartitionEntry[i].PartitionLength.QuadPart);
-				node_att_set(partNode, L"Length", strBuffer, 0);
+				node_att_set(partNode, L"Length", strBuffer, NAFLG_FMT_NUMERIC);
 
 				f = (diskLayout->PartitionEntry[i].PartitionLength.QuadPart / 1073741824);
 				swprintf(strBuffer, L"%.0fGB", f);
-				node_att_set(partNode, L"LengthGb", strBuffer, 0);
+				node_att_set(partNode, L"LengthGb", strBuffer, NAFLG_FMT_GBYTES);
 			}
 		}
 		
 		// Get partition count
 		swprintf(strBuffer, L"%d", partCount);
-		node_att_set(node, L"PartitionCount", strBuffer, 0);
+		node_att_set(node, L"PartitionCount", strBuffer, NAFLG_FMT_NUMERIC);
 	}
 	
 	// Append SCSI Address
 	if (NULL != scsiAddress) {
-		scsiNode = node_alloc(_T("ScsiAddress"), NODE_FLAG_ATT_GROUP);
+		scsiNode = node_alloc(_T("ScsiAddress"), NFLG_ATTGROUP);
 
 		swprintf(strBuffer, _T("%u"), scsiAddress->PortNumber);
-		node_att_set(scsiNode, _T("PortNumber"), strBuffer, 0); // AKA Adapter
+		node_att_set(scsiNode, _T("PortNumber"), strBuffer, NAFLG_FMT_NUMERIC); // AKA Adapter
 
 		swprintf(strBuffer, _T("%u"), scsiAddress->PathId, 0);
-		node_att_set(scsiNode, _T("PathId"), strBuffer, 0); // AKA Bus
+		node_att_set(scsiNode, _T("PathId"), strBuffer, NAFLG_FMT_NUMERIC); // AKA Bus
 
 		swprintf(strBuffer, _T("%u"), scsiAddress->TargetId, 0);
-		node_att_set(scsiNode, _T("TargetId"), strBuffer, 0);
+		node_att_set(scsiNode, _T("TargetId"), strBuffer, NAFLG_FMT_NUMERIC);
 
 		swprintf(strBuffer, _T("%u"), scsiAddress->Lun, 0);
-		node_att_set(scsiNode, _T("Lun"), strBuffer, 0);
+		node_att_set(scsiNode, _T("Lun"), strBuffer, NAFLG_FMT_NUMERIC);
 
 		node_append_child(node, scsiNode);
 	}

@@ -97,12 +97,12 @@ PNODE GetBiosDetail()
 
 	// 0x08 BIOS Release Date
 	unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x08));
-	node_att_set(node, _T("Date"), unicode, 0);
+	node_att_set(node, _T("Date"), unicode, NAFLG_FMT_DATETIME);
 	LocalFree(unicode);
 
 	// 0x09 BIOS ROM Size
 	swprintf(buffer, _T("%llu"), 64 * (1 + BYTE_AT_OFFSET(header, 0x09)));
-	node_att_set(node, _T("RomSizeKb"), buffer, 0);
+	node_att_set(node, _T("RomSizeKb"), buffer, NAFLG_FMT_KBYTES);
 
 	// 0x0A Characteristics
 	unicode = NULL;

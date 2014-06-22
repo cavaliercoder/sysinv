@@ -305,6 +305,7 @@ static LOOKUP_ENTRY IF_CONN_TYPES[] = {
 		{ NET_IF_CONNECTION_DEMAND, _T("On-Demand"), NULL }
 };
 
+// IP_ADAPTER_ADDRESSES.Flags
 static LOOKUP_ENTRY IF_FLAGS[] = {
 		{ IP_ADAPTER_DDNS_ENABLED, NULL, _T("Dynamic DNS is enabled on this adapter.") },
 		{ IP_ADAPTER_REGISTER_ADAPTER_SUFFIX, NULL, _T("Register the DNS suffix for this adapter.") },
@@ -371,7 +372,7 @@ DWORD IP_TO_UNICODE(LPSOCKADDR addr, DWORD addrLength, LPWSTR szBuffer, LPDWORD 
 
 PNODE EnumNetworkInterfaces()
 {
-	PNODE nicsNode = node_alloc(_T("Interfaces"), NODE_FLAG_TABLE);
+	PNODE nicsNode = node_alloc(_T("Interfaces"), NFLG_TABLE);
 	PNODE nicNode = NULL;
 	PNODE addressesNode = NULL;
 	PNODE addressNode = NULL;
@@ -400,16 +401,16 @@ PNODE EnumNetworkInterfaces()
 
 	// Parse each adapter
 	while (NULL != pCurrent) {
-		nicNode = node_append_new(nicsNode, _T("Interface"), NODE_FLAG_TABLE_ENTRY);
+		nicNode = node_append_new(nicsNode, _T("Interface"), NFLG_TABLE_ROW);
 
 		SWPRINTF(szBuffer, _T("%u"), pCurrent->IfIndex);
-		node_att_set(nicNode, _T("Ipv4Index"), szBuffer, NODE_ATT_FLAG_KEY);
+		node_att_set(nicNode, _T("Ipv4Index"), szBuffer, NAFLG_KEY | NAFLG_FMT_NUMERIC);
 
 		SWPRINTF(szBuffer, _T("%u"), pCurrent->Ipv6IfIndex);
-		node_att_set(nicNode, _T("Ipv6Index"), szBuffer, NODE_ATT_FLAG_KEY);
+		node_att_set(nicNode, _T("Ipv6Index"), szBuffer, NAFLG_KEY | NAFLG_FMT_NUMERIC);
 
 		UTF8_TO_UNICODE(pCurrent->AdapterName, szBuffer, SZBUFFERLEN);
-		node_att_set(nicNode, _T("Guid"), szBuffer, 0);
+		node_att_set(nicNode, _T("Guid"), szBuffer, NAFLG_FMT_GUID);
 
 		node_att_set(nicNode, _T("Name"), pCurrent->FriendlyName, 0);
 
@@ -419,7 +420,7 @@ PNODE EnumNetworkInterfaces()
 		}
 
 		else {
-			node_att_set(nicNode, _T("Type"), _T("Unknown"), NODE_ATT_FLAG_ERROR);
+			node_att_set(nicNode, _T("Type"), _T("Unknown"), NAFLG_ERROR);
 			SetError(ERR_WARN, 0, _T("Unknown Network Adapter Type: %u"), pCurrent->IfType);
 		}
 
@@ -429,7 +430,7 @@ PNODE EnumNetworkInterfaces()
 		}
 
 		else {
-			node_att_set(nicNode, _T("ConnectionType"), _T("Unknown"), NODE_ATT_FLAG_ERROR);
+			node_att_set(nicNode, _T("ConnectionType"), _T("Unknown"), NAFLG_ERROR);
 			SetError(ERR_WARN, 0, _T("Unknown Connection Type: %u"), pCurrent->IfType);
 		}
 
@@ -455,22 +456,22 @@ PNODE EnumNetworkInterfaces()
 			node_att_set(nicNode, _T("OperationalState"), lookupResult->Code, 0);
 		}
 		else {
-			node_att_set(nicNode, _T("OperationalState"), _T("Unknown"), NODE_ATT_FLAG_ERROR);
+			node_att_set(nicNode, _T("OperationalState"), _T("Unknown"), NAFLG_ERROR);
 			SetError(ERR_WARN, 0, _T("Unknown Network Adapter Operational Status: %u"), pCurrent->OperStatus);
 		}
 
 		// Connection speed
 		SWPRINTF(szBuffer, _T("%I64u"), pCurrent->TransmitLinkSpeed);
-		node_att_set(nicNode, _T("TransmitSpeed"), szBuffer, 0);
+		node_att_set(nicNode, _T("TransmitSpeed"), szBuffer, NAFLG_FMT_NUMERIC);
 
 		SWPRINTF(szBuffer, _T("%I64u"), pCurrent->ReceiveLinkSpeed);
-		node_att_set(nicNode, _T("ReceiveSpeed"), szBuffer, 0);
+		node_att_set(nicNode, _T("ReceiveSpeed"), szBuffer, NAFLG_FMT_NUMERIC);
 
 		// Unicast addresses
-		addressesNode = node_append_new(nicNode, _T("UnicastAddresses"), NODE_FLAG_TABLE);
+		addressesNode = node_append_new(nicNode, _T("UnicastAddresses"), NFLG_TABLE);
 		pUnicast = pCurrent->FirstUnicastAddress;
 		while (NULL != pUnicast) {
-			addressNode = node_append_new(addressesNode, _T("UnicastAddress"), NODE_FLAG_TABLE_ENTRY);
+			addressNode = node_append_new(addressesNode, _T("UnicastAddress"), NFLG_TABLE_ROW);
 
 			if (NULL != (lookupResult = Lookup(IP_ADDR_FAMILIES, pUnicast->Address.lpSockaddr->sa_family)))
 				node_att_set(addressNode, _T("Family"), lookupResult->Code, 0);
@@ -497,8 +498,6 @@ PNODE EnumNetworkInterfaces()
 
 			pUnicast = pUnicast->Next;
 		}
-
-		// TODO: Add network adapter IPv4/6 addresses
 
 		// Flags
 		pszBuffer = NULL;

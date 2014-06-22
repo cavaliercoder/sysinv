@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "node.h"
 
+void fprintcx(FILE *file, const LPTSTR s, int count);
 PNODE_ATT node_alloc_att(LPCTSTR key, LPCTSTR value, int flags);
 PNODE_ATT node_alloc_att_multi(LPCTSTR key, LPCTSTR value, int flags);
 
@@ -97,7 +98,7 @@ int node_path(PNODE node, LPTSTR buffer, DWORD *bufferlen)
 	
 		// Print node key
 		for(att = hierarchy[i].LinkedNode->Attributes; NULL != att->LinkedAttribute; att++) {
-			if(0 != (att->LinkedAttribute->Flags & NODE_ATT_FLAG_KEY)) {
+			if(0 != (att->LinkedAttribute->Flags & NAFLG_KEY)) {
 				len = wcslen(NODE_DELIM_KEY_OPEN);
 				for(c = 0; c < len; c++, bufferused++)
 					if(bufferused < *bufferlen)
@@ -263,7 +264,7 @@ PNODE_ATT node_alloc_att_multi(LPCTSTR key, LPCTSTR value, int flags)
 	if (NULL != value)
 		memcpy(att->Value, value, sizeof(TCHAR) * (vallen + 1));
 
-	att->Flags = flags | NODE_ATT_FLAG_ARRAY;
+	att->Flags = flags | NAFLG_ARRAY;
 
 	return att;
 }
@@ -433,7 +434,7 @@ int node_to_list(PNODE node, FILE *file, int flags)
 		fprintcx(file, _T("| "), indent_depth - 1);
 		
 		// Is attribute scalar or array?
-		if (0 == (node->Attributes[i].LinkedAttribute->Flags & NODE_ATT_FLAG_ARRAY)) {
+		if (0 == (node->Attributes[i].LinkedAttribute->Flags & NAFLG_ARRAY)) {
 			// Print scalar value
 			fwprintf(file, _T("|- %s = %s"), att->Key, att->Value);
 		}
@@ -527,7 +528,7 @@ int node_to_xml(PNODE node, FILE *file, int flags)
 		
 	}
 	
-	if(0 != (node->Flags & NODE_FLAG_TABLE)) {
+	if(0 != (node->Flags & NFLG_TABLE)) {
 		fwprintf(file, L" Count=\"%u\"", children);
 	}
 
@@ -553,7 +554,7 @@ int node_to_xml(PNODE node, FILE *file, int flags)
 
 
 			// Print non-array
-			if (0 == (NODE_ATT_FLAG_ARRAY & node->Attributes[i].LinkedAttribute->Flags)) {
+			if (0 == (NAFLG_ARRAY & node->Attributes[i].LinkedAttribute->Flags)) {
 				fwprintf(file, L"<%s>%s</%s>%s", key, strBuffer, key, nl);
 			}
 

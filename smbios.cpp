@@ -142,7 +142,7 @@ PNODE GetSmbiosDetail()
 	node_att_set(biosNode, _T("Version"), buffer, 0);
 
 	swprintf(buffer, _T("%u"), smbios->DmiRevision);
-	node_att_set(biosNode, _T("DmiRevision"), buffer, 0);
+	node_att_set(biosNode, _T("DmiRevision"), buffer, NAFLG_FMT_NUMERIC);
 
 done:
 
@@ -174,7 +174,7 @@ PNODE EnumOemStrings()
 	if (NULL == header)
 		return node;
 
-	node = node_alloc(_T("OemStrings"), NODE_FLAG_TABLE);
+	node = node_alloc(_T("OemStrings"), NFLG_TABLE);
 	cursor = (PBYTE)header;
 	
 	// 0x04 Count
@@ -184,8 +184,8 @@ PNODE EnumOemStrings()
 		unicode = GetSmbiosString(header, i);
 
 		// String value
-		stringNode = node_append_new(node, _T("OemString"), NODE_FLAG_TABLE_ENTRY);
-		node_att_set(stringNode, _T("Index"), buffer, 0);
+		stringNode = node_append_new(node, _T("OemString"), NFLG_TABLE_ROW);
+		node_att_set(stringNode, _T("Index"), buffer, NAFLG_FMT_NUMERIC);
 		node_att_set(stringNode, _T("Value"), unicode, 0);
 		LocalFree(unicode);
 	}

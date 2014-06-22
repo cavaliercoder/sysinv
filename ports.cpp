@@ -90,7 +90,7 @@ LOOKUP_ENTRY PORT_TYPES[] = {
 
 PNODE GetPortDetail(PRAW_SMBIOS_DATA smbios, PSMBIOS_STRUCT_HEADER header)
 {
-	PNODE portNode = node_alloc(_T("Port"), NODE_FLAG_TABLE_ENTRY);
+	PNODE portNode = node_alloc(_T("Port"), NFLG_TABLE_ROW);
 	LPTSTR pszBuffer = NULL;
 	TCHAR szBuffer[MAX_PATH + 1];
 	DWORD i = 0;

@@ -109,7 +109,7 @@ PNODE GetSlotDetail(PRAW_SMBIOS_DATA smbios, PSMBIOS_STRUCT_HEADER header)
 	DWORD slotType = 0;
 	DWORD i = 0;
 
-	node = node_alloc(_T("Slot"), NODE_FLAG_TABLE_ENTRY);
+	node = node_alloc(_T("Slot"), NFLG_TABLE_ROW);
 
 	// 0x04 Designation
 	pszBuffer = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x04));
@@ -134,15 +134,15 @@ PNODE GetSlotDetail(PRAW_SMBIOS_DATA smbios, PSMBIOS_STRUCT_HEADER header)
 	case 0x04:	// MCA
 	case 0x05:	// EISA
 		swprintf(szBuffer, _T("%u"), BYTE_AT_OFFSET(header, 0x09) + 1);
-		node_att_set(node, _T("SlotNumber"), szBuffer, 0);
+		node_att_set(node, _T("SlotNumber"), szBuffer, NAFLG_FMT_NUMERIC);
 		break;
 
 	case 0x07:	// PC Card (PCMCIA)
 		swprintf(szBuffer, _T("%u"), BYTE_AT_OFFSET(header, 0x09));
-		node_att_set(node, _T("AdapterNumber"), szBuffer, 0);
+		node_att_set(node, _T("AdapterNumber"), szBuffer, NAFLG_FMT_NUMERIC);
 
 		swprintf(szBuffer, _T("%u"), BYTE_AT_OFFSET(header, 0x0A));
-		node_att_set(node, _T("SocketNumber"), szBuffer, 0);
+		node_att_set(node, _T("SocketNumber"), szBuffer, NAFLG_FMT_NUMERIC);
 		break;
 
 	default:	// Other
@@ -153,7 +153,7 @@ PNODE GetSlotDetail(PRAW_SMBIOS_DATA smbios, PSMBIOS_STRUCT_HEADER header)
 			|| (0xA5 <= slotType && 0xB6 >= slotType)
 			) {
 			swprintf(szBuffer, _T("%u"), BYTE_AT_OFFSET(header, 0x09));
-			node_att_set(node, _T("SlotNumber"), szBuffer, 0);
+			node_att_set(node, _T("SlotNumber"), szBuffer, NAFLG_FMT_NUMERIC);
 		}
 	}
 

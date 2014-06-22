@@ -395,8 +395,8 @@ PNODE EnumProcessors()
 	char buffer[BUFLEN];
 	TCHAR strBuffer[BUFLEN];
 	LPTSTR unicode = NULL;
-	PNODE cpuNode = node_alloc(L"Processors", NODE_FLAG_TABLE);
-	PNODE featuresNode = node_append_new(cpuNode, _T("Features"), NODE_FLAG_TABLE);
+	PNODE cpuNode = node_alloc(L"Processors", NFLG_TABLE);
+	PNODE featuresNode = node_append_new(cpuNode, _T("Features"), NFLG_TABLE);
 	PNODE node = NULL;
 
 	TCHAR szManufacturer[13];
@@ -421,7 +421,7 @@ PNODE EnumProcessors()
 	node_att_set(cpuNode, L"Type", strBuffer, 0);
 
 	swprintf(strBuffer, L"%u", (cpuinfo[EAX] & 0xF));
-	node_att_set(cpuNode, L"Stepping", strBuffer, 0);
+	node_att_set(cpuNode, L"Stepping", strBuffer, NAFLG_FMT_NUMERIC);
 
 	dwBuffer = (cpuinfo[EAX] >> 8) & 0xF; // Family
 	dwBuffer2 = (cpuinfo[EAX] >> 20) & 0xFF; // Extended Family
@@ -429,7 +429,7 @@ PNODE EnumProcessors()
 		dwBuffer += dwBuffer2;
 
 	swprintf(strBuffer, _T("0x%02X"), dwBuffer);
-	node_att_set(cpuNode, L"Family", strBuffer, 0);
+	node_att_set(cpuNode, L"Family", strBuffer, NAFLG_FMT_HEX);
 
 	if (0x0F == dwBuffer || 0x06 == dwBuffer)
 		dwBuffer = (((cpuinfo[EAX] >> 16) & 0xF) << 4) + ((cpuinfo[EAX] >> 4) & 0xF);
@@ -437,20 +437,20 @@ PNODE EnumProcessors()
 		dwBuffer = (cpuinfo[EAX] >> 4) & 0xF;
 
 	swprintf(strBuffer, L"0x%02X", dwBuffer);
-	node_att_set(cpuNode, L"Model", strBuffer, 0);
+	node_att_set(cpuNode, L"Model", strBuffer, NAFLG_FMT_HEX);
 
 	// EAX=0x01 EBX
 	swprintf(strBuffer, _T("%u"), 8 * ((cpuinfo[EBX] >> 8) & 0x7F));
-	node_att_set(cpuNode, _T("CacheLineSize"), strBuffer, 0);
+	node_att_set(cpuNode, _T("CacheLineSize"), strBuffer, NAFLG_FMT_NUMERIC);
 
 	swprintf(strBuffer, _T("%u"), (cpuinfo[EBX] >> 24) & 0x7F);
-	node_att_set(cpuNode, _T("ApicPhysicalId"), strBuffer, 0);
+	node_att_set(cpuNode, _T("ApicPhysicalId"), strBuffer, NAFLG_FMT_NUMERIC);
 
 	// EAX=0x01 ECX Feature Info (Intel table 3-21)
 	for (i = 0; i < ARRAYSIZE(PROC_FEATURES_ECX); i++) {
 		if (CHECK_BIT(cpuinfo[ECX], PROC_FEATURES_ECX[i].Index)) {
-			node = node_append_new(featuresNode, _T("Feature"), NODE_FLAG_TABLE_ENTRY);
-			node_att_set(node, _T("Feature"), PROC_FEATURES_ECX[i].Code, NODE_ATT_FLAG_KEY);
+			node = node_append_new(featuresNode, _T("Feature"), NFLG_TABLE_ROW);
+			node_att_set(node, _T("Feature"), PROC_FEATURES_ECX[i].Code, NAFLG_KEY);
 			node_att_set(node, _T("Description"), PROC_FEATURES_ECX[i].Description, 0);
 		}
 	}
@@ -458,8 +458,8 @@ PNODE EnumProcessors()
 	// EAX=0x01 EDX Extended Feature info (Intel table 3-21)
 	for (i = 0; i < ARRAYSIZE(PROC_FEATURES_EDX); i++) {
 		if (CHECK_BIT(cpuinfo[EDX], PROC_FEATURES_EDX[i].Index)) {
-			node = node_append_new(featuresNode, _T("Feature"), NODE_FLAG_TABLE_ENTRY);
-			node_att_set(node, _T("Feature"), PROC_FEATURES_EDX[i].Code, NODE_ATT_FLAG_KEY);
+			node = node_append_new(featuresNode, _T("Feature"), NFLG_TABLE_ROW);
+			node_att_set(node, _T("Feature"), PROC_FEATURES_EDX[i].Code, NAFLG_KEY);
 			node_att_set(node, _T("Description"), PROC_FEATURES_EDX[i].Description, 0);
 		}	
 	}
@@ -493,7 +493,7 @@ PNODE EnumProcessors()
 // SMBIOS Table Type 4
 PNODE EnumProcSockets()
 {
-	PNODE procSocketsNode = node_alloc(_T("ProcessorSockets"), NODE_FLAG_TABLE);
+	PNODE procSocketsNode = node_alloc(_T("ProcessorSockets"), NFLG_TABLE);
 	PNODE node = NULL;
 
 	PRAW_SMBIOS_DATA smbios = GetSmbiosData();
@@ -514,7 +514,7 @@ PNODE EnumProcSockets()
 			if (isVirt && !(BYTE_AT_OFFSET(header, 0x18) >> 6))
 				continue;
 
-			node = node_append_new(procSocketsNode, _T("Processor"), NODE_FLAG_TABLE_ENTRY);
+			node = node_append_new(procSocketsNode, _T("Processor"), NFLG_TABLE_ROW);
 
 			// 0x04 Designation
 			unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x04));
@@ -546,7 +546,7 @@ PNODE EnumProcSockets()
 				// Remaining bits are voltage * 10
 				dwBuffer &= (1 << 7);
 				swprintf(buffer, _T("%f"), (float)dwBuffer / 10.0);
-				node_att_set(node, _T("Voltage"), buffer, 0);
+				node_att_set(node, _T("Voltage"), buffer, NAFLG_FMT_NUMERIC);
 			}
 
 			else {
@@ -559,26 +559,26 @@ PNODE EnumProcSockets()
 				if (CHECK_BIT(dwBuffer, 2))
 					AppendMultiString(&unicode, _T("2.9"));
 
-				node_att_set_multi(node, _T("SupportedVoltages"), unicode, 0);
+				node_att_set_multi(node, _T("SupportedVoltages"), unicode, NAFLG_FMT_NUMERIC);
 				LocalFree(unicode);
 			}
 
 			// 0x12 External Clock Speed Mhz
 			if (0 != WORD_AT_OFFSET(header, 0x12)) {
 				swprintf(buffer, _T("%u"), WORD_AT_OFFSET(header, 0x12));
-				node_att_set(node, _T("ExternalClockMhz"), buffer, 0);
+				node_att_set(node, _T("ExternalClockMhz"), buffer, NAFLG_FMT_NUMERIC);
 			}
 
 			// 0x14 Max Speed
 			if (0 != WORD_AT_OFFSET(header, 0x14)) {
 				swprintf(buffer, _T("%u"), WORD_AT_OFFSET(header, 0x14));
-				node_att_set(node, _T("MaxSpeedMhz"), buffer, 0);
+				node_att_set(node, _T("MaxSpeedMhz"), buffer, NAFLG_FMT_NUMERIC);
 			}
 
 			// 0x16 Current Speed
 			if (0 != WORD_AT_OFFSET(header, 0x16)) {
 				swprintf(buffer, _T("%u"), WORD_AT_OFFSET(header, 0x16));
-				node_att_set(node, _T("CurrentSpeedMhz"), buffer, 0);
+				node_att_set(node, _T("CurrentSpeedMhz"), buffer, NAFLG_FMT_NUMERIC);
 			}
 
 			// 0x18 Status
@@ -618,15 +618,15 @@ PNODE EnumProcSockets()
 			if (2 < smbios->SMBIOSMajorVersion || (2 == smbios->SMBIOSMajorVersion && 5 <= smbios->SMBIOSMinorVersion)) {
 				// 0x23 Core Count
 				swprintf(buffer, _T("%u"), BYTE_AT_OFFSET(header, 0x23));
-				node_att_set(node, _T("CoreCount"), buffer, 0);
+				node_att_set(node, _T("CoreCount"), buffer, NAFLG_FMT_NUMERIC);
 
 				// 0x24 Enabled Count
 				swprintf(buffer, _T("%u"), BYTE_AT_OFFSET(header, 0x24));
-				node_att_set(node, _T("EnabledCoreCount"), buffer, 0);
+				node_att_set(node, _T("EnabledCoreCount"), buffer, NAFLG_FMT_NUMERIC);
 
 				// 0x25 Thread Count
 				swprintf(buffer, _T("%u"), BYTE_AT_OFFSET(header, 0x25));
-				node_att_set(node, _T("ThreadsPerCore"), buffer, 0);
+				node_att_set(node, _T("ThreadsPerCore"), buffer, NAFLG_FMT_NUMERIC);
 
 				// 0x26 Characteristics
 				unicode = NULL;

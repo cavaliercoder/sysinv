@@ -33,7 +33,7 @@ static LPCTSTR BOARD_TYPE[] = {
 // Baseboard Table Type 2
 PNODE EnumBaseboards()
 {
-	PNODE baseBoardsNode = node_alloc(_T("Baseboards"), 0);
+	PNODE baseBoardsNode = node_alloc(_T("Baseboards"), NFLG_TABLE);
 	PNODE node = NULL;
 	PNODE slotsNode = NULL;
 	PNODE portsNode = NULL;
@@ -48,7 +48,7 @@ PNODE EnumBaseboards()
 	DWORD i = 0;
 
 	while (NULL != (header = GetNextStructureOfType(header, SMB_TABLE_BASEBOARD))) {
-		node = node_append_new(baseBoardsNode, _T("BaseBoard"), 0);
+		node = node_append_new(baseBoardsNode, _T("BaseBoard"), NFLG_TABLE_ROW);
 		
 		// 0x04 Manufacturer
 		if (header->Length < 0x05) goto get_children;
@@ -106,8 +106,8 @@ PNODE EnumBaseboards()
 
 	get_children:
 
-		slotsNode = node_append_new(node, _T("Slots"), NODE_FLAG_TABLE);
-		portsNode = node_append_new(node, _T("Ports"), NODE_FLAG_TABLE);
+		slotsNode = node_append_new(node, _T("Slots"), NFLG_TABLE);
+		portsNode = node_append_new(node, _T("Ports"), NFLG_TABLE);
 		if (0 == childCount) {
 			// Assume everything is a child if 0x0E is 0
 			// Ports (Type 8)

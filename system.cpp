@@ -34,14 +34,14 @@ PNODE GetSystemDetail()
 
 	// Get host name
 	GetComputerName(hostname, &bufferSize);
-	node_att_set(node, L"Hostname", hostname, NODE_ATT_FLAG_KEY);
+	node_att_set(node, L"Hostname", hostname, NAFLG_KEY);
 
 	// Get time stamp (Universal full format eg. 2009-06-15 20:45:30Z)
 	GetSystemTime(&systemTime);
 	if (cursor = GetDateFormat(LOCALE_SYSTEM_DEFAULT, 0, &systemTime, _T("yyyy-MM-dd"), szSystemTime, MAX_PATH + 1)) {
 		szSystemTime[cursor - 1] = ' ';
 		if (GetTimeFormat(LOCALE_SYSTEM_DEFAULT, 0, &systemTime, _T("HH:mm:ssZ"), &szSystemTime[cursor], MAX_PATH + 1)) {
-			node_att_set(node, _T("Timestamp"), szSystemTime, 0);
+			node_att_set(node, _T("Timestamp"), szSystemTime, NAFLG_FMT_DATETIME);
 		}
 	}
 
@@ -105,7 +105,7 @@ PNODE GetSystemDetail()
 		// 0x08 UUID Byte Array
 		pszBuffer = (LPTSTR)LocalAlloc(LPTR, sizeof(TCHAR) * 40);
 		StringFromGUID2(VAL_AT_OFFET(GUID, smHeader, 0x08), pszBuffer, 40);
-		node_att_set(node, _T("Uuid"), pszBuffer, 0);
+		node_att_set(node, _T("Uuid"), pszBuffer, NAFLG_FMT_GUID);
 		LocalFree(pszBuffer);
 
 		// 0x18 Wake-up Type

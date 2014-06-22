@@ -60,7 +60,7 @@ static LPCTSTR CHASSIS_SECURITY_STATUS[] = {
 // 7.4 System Enclosure or Chassis (Type 3) 
 PNODE EnumChassis()
 {
-	PNODE parentNode = node_alloc(_T("Chassis"), 0);
+	PNODE parentNode = node_alloc(_T("Chassis"), NFLG_TABLE);
 	PNODE node = NULL;
 
 	PRAW_SMBIOS_DATA smbios = GetSmbiosData();
@@ -72,7 +72,7 @@ PNODE EnumChassis()
 	while (NULL != (header = GetNextStructureOfType(header, SMB_TABLE_CHASSIS))) {
 		// v2.0+
 		if (header->Length < 0x09) continue;
-		node = node_append_new(parentNode, _T("Chassis"), 0);
+		node = node_append_new(parentNode, _T("Chassis"), NFLG_TABLE_ROW);
 
 		// 0x04 Manufacturer
 		unicode = GetSmbiosString(header, BYTE_AT_OFFSET(header, 0x04));

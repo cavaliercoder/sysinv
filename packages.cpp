@@ -17,7 +17,7 @@ PNODE_ATT MsiQueryProperty(PNODE node, LPTSTR key, LPCTSTR szProductCode, LPCTST
 
 PNODE EnumPackages()
 {
-	PNODE packages = node_alloc(L"Packages", NODE_FLAG_TABLE);
+	PNODE packages = node_alloc(L"Packages", NFLG_TABLE);
 	PNODE node = NULL;
 	PNODE_ATT att = NULL;
 	UINT ret;
@@ -40,10 +40,10 @@ PNODE EnumPackages()
 			szSid,
 			&cchSid))) {
 
-		node = node_alloc(_T("Package"), NODE_FLAG_TABLE_ENTRY);
+		node = node_alloc(_T("Package"), NFLG_TABLE_ROW);
 
 		// Product Code
-		node_att_set(node, _T("ProductCode"), szInstalledProductCode, NODE_ATT_FLAG_KEY);
+		node_att_set(node, _T("ProductCode"), szInstalledProductCode, NAFLG_KEY);
 
 		// Product name
 		att = MsiQueryProperty(node, _T("Name"), szInstalledProductCode, cchSid == 0 ? NULL : szSid, dwInstalledContext, INSTALLPROPERTY_INSTALLEDPRODUCTNAME);
