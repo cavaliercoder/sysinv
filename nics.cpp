@@ -9,6 +9,8 @@
 
 #define BUFFER_SIZE			16384
 
+DWORD IP_TO_UNICODE(LPSOCKADDR addr, DWORD addrLength, LPWSTR szBuffer, LPDWORD bufferSize);
+
 // http://www.iana.org/assignments/ianaiftype-mib/ianaiftype-mib
 static LOOKUP_ENTRY IF_TYPES[] = {
 		{ 1, _T("other"), _T("Other") },
@@ -316,10 +318,64 @@ static LOOKUP_ENTRY IF_FLAGS[] = {
 		{ IP_ADAPTER_IPV6_MANAGE_ADDRESS_CONFIG, NULL, _T("The adapter is enabled for IPv6 managed address configuration.") },
 };
 
-PNODE EnumNetworkAdapters()
+// IP_PREFIX_ORIGIN
+static LOOKUP_ENTRY IP_PREFIX_ORIGINS[] = {
+		{ IpPrefixOriginOther, _T("Other"), NULL },
+		{ IpPrefixOriginManual, _T("Manual"), NULL },
+		{ IpPrefixOriginWellKnown, _T("Well Known"), NULL },
+		{ IpPrefixOriginDhcp, _T("DHCP"), NULL, },
+		{ IpPrefixOriginRouterAdvertisement, _T("Router Advertisement"), NULL },
+		{ IpPrefixOriginUnchanged, _T("Unchanged"), NULL }
+};
+
+// IP_SUFFIX_ORIGIN
+static LOOKUP_ENTRY IP_SUFFIX_ORIGINS[] = {
+		{ IpSuffixOriginOther, _T("Other"), NULL },
+		{ IpSuffixOriginManual, _T("Manual"), NULL },
+		{ IpSuffixOriginWellKnown, _T("Well Known"), NULL },
+		{ IpSuffixOriginDhcp, _T("DHCP"), NULL },
+		{ IpSuffixOriginLinkLayerAddress, _T("Link-Layer Address"), NULL },
+		{ IpSuffixOriginRandom, _T("Random"), NULL },
+		{ IpSuffixOriginRandom, _T("Unchanged"), NULL }
+};
+
+// sockaddr.sa_family
+static LOOKUP_ENTRY IP_ADDR_FAMILIES[] = {
+		{ 0x02, _T("IPv4"), NULL },
+		{ 0x17, _T("IPv6"), NULL }
+};
+
+DWORD IP_TO_UNICODE(LPSOCKADDR addr, DWORD addrLength, LPWSTR szBuffer, LPDWORD bufferSize) {
+	DWORD dwRetVal = 0;
+	WSADATA wsaData;
+
+	if (0 == WSAStartup(MAKEWORD(1, 1), &wsaData)) {
+		if (0 != (WSAAddressToString(addr, addrLength, NULL, szBuffer, bufferSize))) {
+			dwRetVal = WSAGetLastError();
+			SetError(ERR_CRIT, dwRetVal, _T("Failed to traslate IP Address to String"));
+		}
+		else {
+			dwRetVal = 0;
+		}
+		WSACleanup();
+	}
+
+	else {
+		dwRetVal = GetLastError();
+		SetError(ERR_CRIT, dwRetVal, _T("Failed to start WSA"));
+	}
+
+	return dwRetVal;
+}
+
+
+PNODE EnumNetworkInterfaces()
 {
-	PNODE nicsNode = node_alloc(_T("NetworkAdapters"), NODE_FLAG_TABLE);
+	PNODE nicsNode = node_alloc(_T("Interfaces"), NODE_FLAG_TABLE);
 	PNODE nicNode = NULL;
+	PNODE addressesNode = NULL;
+	PNODE addressNode = NULL;
+
 	ULONG bufferSize = BUFFER_SIZE;
 	PIP_ADAPTER_ADDRESSES pAddresses = (PIP_ADAPTER_ADDRESSES) MALLOC(bufferSize);
 	PIP_ADAPTER_ADDRESSES pCurrent = pAddresses;
@@ -344,7 +400,7 @@ PNODE EnumNetworkAdapters()
 
 	// Parse each adapter
 	while (NULL != pCurrent) {
-		nicNode = node_append_new(nicsNode, _T("NetworkAdapter"), NODE_FLAG_TABLE_ENTRY);
+		nicNode = node_append_new(nicsNode, _T("Interface"), NODE_FLAG_TABLE_ENTRY);
 
 		SWPRINTF(szBuffer, _T("%u"), pCurrent->IfIndex);
 		node_att_set(nicNode, _T("Ipv4Index"), szBuffer, NODE_ATT_FLAG_KEY);
@@ -411,7 +467,37 @@ PNODE EnumNetworkAdapters()
 		node_att_set(nicNode, _T("ReceiveSpeed"), szBuffer, 0);
 
 		// Unicast addresses
+		addressesNode = node_append_new(nicNode, _T("UnicastAddresses"), NODE_FLAG_TABLE);
 		pUnicast = pCurrent->FirstUnicastAddress;
+		while (NULL != pUnicast) {
+			addressNode = node_append_new(addressesNode, _T("UnicastAddress"), NODE_FLAG_TABLE_ENTRY);
+
+			if (NULL != (lookupResult = Lookup(IP_ADDR_FAMILIES, pUnicast->Address.lpSockaddr->sa_family)))
+				node_att_set(addressNode, _T("Family"), lookupResult->Code, 0);
+
+			bufferSize = ARRAYSIZE(szBuffer);
+			if (0 == IP_TO_UNICODE(pUnicast->Address.lpSockaddr, pUnicast->Address.iSockaddrLength, szBuffer, &bufferSize))
+				node_att_set(addressNode, _T("IPAddress"), szBuffer, NAFLG_FMT_IPADDR);
+
+			// Is address a clustered address?
+			node_att_set_bool(addressNode, _T("Transient"), pUnicast->Flags & IP_ADAPTER_ADDRESS_TRANSIENT, 0);
+
+			// Eligible for DNS registration?
+			node_att_set_bool(addressNode, _T("DnsEligible"), pUnicast->Flags & IP_ADAPTER_ADDRESS_DNS_ELIGIBLE, 0);
+
+			// Prefix Origin
+			if (NULL != (lookupResult = Lookup(IP_PREFIX_ORIGINS, pUnicast->PrefixOrigin))) {
+				node_att_set(addressNode, _T("PrefixOrigin"), lookupResult->Code, 0);
+			}
+
+			// Suffix origin
+			if (NULL != (lookupResult = Lookup(IP_SUFFIX_ORIGINS, pUnicast->SuffixOrigin))) {
+				node_att_set(addressNode, _T("SuffixOrigin"), lookupResult->Code, 0);
+			}
+
+			pUnicast = pUnicast->Next;
+		}
+
 		// TODO: Add network adapter IPv4/6 addresses
 
 		// Flags

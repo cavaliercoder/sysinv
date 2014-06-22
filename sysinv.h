@@ -6,19 +6,18 @@
 PNODE EnumSmbiosTables();
 PNODE EnumPackages();
 PNODE EnumProcessors();
-PNODE EnumDisks(); 
-PNODE EnumNetworkAdapters();
-
-PNODE EnumVolumes();
-PNODE EnumClusterServices();
+PNODE EnumDisks();
 
 // Software
 PNODE GetAgentDetail();
 PNODE GetSystemDetail();
 PNODE GetOperatingSystemDetail();
 PNODE GetVirtualizationDetail();
-// Configuration
 
+// Configuration
+PNODE EnumNetworkInterfaces();
+PNODE EnumVolumes();
+PNODE EnumClusterServices();
 
 // SMBIOS functions
 PNODE GetSmbiosDetail();

@@ -20,8 +20,17 @@
 #define NODE_FLAG_ATT_GROUP		0x08	// This node is a grouping of attributes belonging to the parent node
 
 #define NODE_ATT_FLAG_KEY		0x1		// Attribute is a key field for the parent node
-#define NODE_ATT_FLAG_ARRAY		0x2		// Attribute value is a multistring array terminated by a zero length string
+#define NODE_ATT_FLAG_ARRAY		0x4		// Attribute value is a multistring array terminated by a zero length string
 #define NODE_ATT_FLAG_ERROR		0x80	// Attribute value is invalid or the result of an error
+
+#define NAFLG_FMT_BYTES			0x100	// Attribute value is expressed in bytes
+#define NAFLG_FMT_KBYTES		0x200	// Attribute value is expressed in Kilobytes (2^10)
+#define NAFLG_FMT_MBYTES		0x400	// Attribute value is expressed in Megabytes (2^20)
+#define NAFLG_FMT_GBYTES		0x800	// Attribute value is expressed in Gigabytes (2^30)
+#define NAFLG_FMT_TBYTES		0x1000	// Attribute value is expressed in Terabytes (2^40)
+
+#define NAFLG_FMT_IPADDR		0x2000	// Attribute value is an IPv4 or IPv6 address
+#define NAFLG_FMT_BOOLEAN		0x4000  // Attribute value is boolean (yes/no)
 
 #define NODE_XML_FLAG_NODEC		0x1		// No XML Document Declaration				
 #define NODE_XML_FLAG_NOWS		0x2		// No whitespace
@@ -35,6 +44,8 @@
 #define NODE_JS_DELIM_NL		L"\n"	// New line for JSON output
 #define NODE_JS_DELIM_INDENT	L"  "	// Tab token for JSON output
 #define NODE_JS_DELIM_SPACE		L" "	// Space used between keys and values
+
+#define node_att_set_bool(node, key, value, flags)		node_att_set(node, key, (value ? _T("Yes") : _T("No")), flags | NAFLG_FMT_BOOLEAN)
 
 typedef struct _NODE {
 	wchar_t	*Name;						// Name of the node

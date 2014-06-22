@@ -16,7 +16,7 @@ void print_usage(int ret);
 int main(int argc, CHAR* argv[])
 {
 	FILE *out = stdout;
-	PNODE root, agent, software, hardware, storage, configuration, node;
+	PNODE root, agent, software, hardware, configuration, storage, network, node;
 	DWORD format = OUT_LIST;
 	DWORD i = 0;
 	PARGLIST argList = parse_args(argc, argv);
@@ -126,10 +126,6 @@ int main(int argc, CHAR* argv[])
 		// Get disks
 		node = EnumDisks();
 		node_append_child(hardware, node);
-
-		// Get network adapters
-		node = EnumNetworkAdapters();
-		node_append_child(hardware, node);
 	}
 
 	if (getSoftware) {
@@ -147,10 +143,14 @@ int main(int argc, CHAR* argv[])
 	if (getConfiguration) {
 		configuration = node_append_new(root, L"Configuration", NODE_FLAG_PLACEHOLDER);
 		storage = node_append_new(configuration, L"Storage", NODE_FLAG_PLACEHOLDER);
+		network = node_append_new(configuration, L"Network", NODE_FLAG_PLACEHOLDER);
 
 		// Get volume info
 		node = EnumVolumes();
 		node_append_child(storage, node);
+
+		// Get network configuration
+		node_append_child(network, EnumNetworkInterfaces());
 
 		// Get Failover Cluster Node
 		node = EnumClusterServices();

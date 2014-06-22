@@ -23,7 +23,7 @@ int AppendMultiString(LPTSTR *lpmszMulti, LPCTSTR szNew)
 	if (NULL == szNew)
 		return 0;
 
-	newSzLength = wcslen(szNew);
+	newSzLength = (DWORD) wcslen(szNew);
 
 	// If old multistring was empty
 	if (NULL == (*lpmszMulti)) {
@@ -109,13 +109,13 @@ void _SetError(LPCTSTR filename, LPCTSTR function, DWORD line, DWORD level, DWOR
 	// Convert filename to wide
 
 	// Allocate
-	size = sizeof(ERROR_MESSAGE) + (sizeof(TCHAR) * (wcslen(buffer) + 1));
+	size = (DWORD)(sizeof(ERROR_MESSAGE) + (sizeof(TCHAR) * (wcslen(buffer) + 1)));
 	
 	if (NULL != filename)
-		size += (DWORD) sizeof(TCHAR) * wcslen(filename);
+		size += (DWORD) (sizeof(TCHAR) * wcslen(filename));
 
 	if (NULL != function)
-		size += (DWORD) sizeof(TCHAR) * wcslen(function);
+		size += (DWORD) (sizeof(TCHAR) * wcslen(function));
 
 	if (NULL == (error = (PERROR_MESSAGE)calloc(1, size))) {
 		fprintf(stderr, "Failed to allocate memory for error message\n");
@@ -152,8 +152,9 @@ void _SetError(LPCTSTR filename, LPCTSTR function, DWORD line, DWORD level, DWOR
 
 	// Add to log
 	if (NULL == errorLog) {
-		errorLog = (PERROR_MESSAGE *)calloc(2, sizeof(PERROR_MESSAGE)); // 2 for NULL pointer at the end
+		errorLog = (PERROR_MESSAGE *)malloc(2 * sizeof(PERROR_MESSAGE)); // 2 for NULL pointer at the end
 		errorLog[0] = error;
+		errorLog[1] = NULL;
 	}
 
 	else {
@@ -190,7 +191,7 @@ PNODE EnumErrorLog()
 			node_att_set(errorNode, _T("FileName"), error->FileName, 0);
 			node_att_set(errorNode, _T("Function"), error->FunctionName, 0);
 
-			swprintf(buffer, _T("%u"), error->LineNumber);
+			SWPRINTF(buffer, _T("%u"), error->LineNumber);
 			node_att_set(errorNode, _T("LineNumber"), buffer, 0);
 
 			// Error message
@@ -221,7 +222,7 @@ PNODE EnumErrorLog()
 			// Error code
 			if (0 != error->SystemErrorCode) {
 				// Error code
-				swprintf(buffer, _T("0x%X"), error->SystemErrorCode);
+				SWPRINTF(buffer, _T("0x%X"), error->SystemErrorCode);
 				node_att_set(errorNode, _T("ErrorCode"), buffer, 0);
 
 				// Get system error message

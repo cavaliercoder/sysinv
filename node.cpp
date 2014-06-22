@@ -354,7 +354,6 @@ PNODE_ATT node_att_set(PNODE node, const LPCTSTR key, const LPCTSTR value, int f
 	return att;
 }
 
-
 PNODE_ATT node_att_set_multi(PNODE node, LPCTSTR key, LPCTSTR value, int flags)
 {
 	int i, old_count, new_count, new_index;
