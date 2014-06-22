@@ -10,122 +10,128 @@
 #include "stdafx.h"
 #include "sysinv.h"
 
-#pragma comment(lib, "Msi.lib")
-#include <Msi.h>
+#define PACKAGES_REG_PATH			_T("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall")
+#define MAX_KEY_LEN					255
 
-PNODE_ATT MsiQueryProperty(PNODE node, LPTSTR key, LPCTSTR szProductCode, LPCTSTR szUserSid, MSIINSTALLCONTEXT dwContext, LPCTSTR szProperty);
+LPTSTR GetRegString(HKEY hKey, LPCTSTR name);
+
+LPTSTR GetRegString(HKEY hKey, LPCTSTR name)
+{
+	LPTSTR pszBuffer = NULL;
+	DWORD dwBufferSize = 0;
+	DWORD dwRetVal = 0;
+
+	if (ERROR_SUCCESS == (dwRetVal = RegQueryValueEx(hKey, name, 0, NULL, NULL, &dwBufferSize))) {
+		if (NULL != (pszBuffer = (LPTSTR)MALLOC(dwBufferSize * 2))) {
+			if (ERROR_SUCCESS != (dwRetVal = RegQueryValueEx(hKey, name, NULL, NULL, (LPBYTE) pszBuffer, &dwBufferSize))) {
+				FREE(pszBuffer);
+				pszBuffer = NULL;
+			}
+		}
+	}
+
+	return pszBuffer;
+}
 
 PNODE EnumPackages()
 {
-	PNODE packages = node_alloc(L"Packages", NFLG_TABLE);
-	PNODE node = NULL;
-	PNODE_ATT att = NULL;
-	UINT ret;
-	DWORD index = 0;
-	TCHAR szInstalledProductCode[39] = {0};
-	TCHAR szSid[128] = {0};
-	DWORD cchSid;
-	MSIINSTALLCONTEXT dwInstalledContext;;
+	PNODE packagesNode = node_alloc(L"Packages", NFLG_TABLE);
+	PNODE packageNode = NULL;
+	HKEY hKey = NULL;
+	HKEY hSubkey = NULL;
+	DWORD dwRetVal = 0;
+	DWORD dwIndex = 0;
+	DWORD dwBufferSize = MAX_KEY_LEN;
+	TCHAR szBuffer[MAX_KEY_LEN];
+	LPTSTR pszBuffer = NULL;
 
-	memset(szInstalledProductCode, 0, sizeof(szInstalledProductCode));
-	cchSid = sizeof(szSid) / sizeof(szSid[0]);
-
-	while(ERROR_SUCCESS == (ret = MsiEnumProductsEx(
-			NULL,
-			L"s-1-0-0", // All users
-			MSIINSTALLCONTEXT_USERMANAGED | MSIINSTALLCONTEXT_USERUNMANAGED | MSIINSTALLCONTEXT_MACHINE,
-			index++,
-			szInstalledProductCode,
-			&dwInstalledContext,
-			szSid,
-			&cchSid))) {
-
-		node = node_alloc(_T("Package"), NFLG_TABLE_ROW);
-
-		// Product Code
-		node_att_set(node, _T("ProductCode"), szInstalledProductCode, NAFLG_KEY);
-
-		// Product name
-		att = MsiQueryProperty(node, _T("Name"), szInstalledProductCode, cchSid == 0 ? NULL : szSid, dwInstalledContext, INSTALLPROPERTY_INSTALLEDPRODUCTNAME);
-
-		// Publisher
-		att = MsiQueryProperty(node, _T("Publisher"), szInstalledProductCode, cchSid == 0 ? NULL : szSid, dwInstalledContext, INSTALLPROPERTY_PUBLISHER);
-
-		// Version
-		att = MsiQueryProperty(node, _T("Version"), szInstalledProductCode, cchSid == 0 ? NULL : szSid, dwInstalledContext, INSTALLPROPERTY_VERSIONSTRING);
-		
-		// Registered Owner
-		att = MsiQueryProperty(node, _T("RegisteredUser"), szInstalledProductCode, cchSid == 0 ? NULL : szSid, dwInstalledContext, _T("RegOwner"));
-		
-		// Registered Owner Company
-		att = MsiQueryProperty(node, _T("RegisteredCompany"), szInstalledProductCode, cchSid == 0 ? NULL : szSid, dwInstalledContext, _T("RegCompany"));
-
-		// Install Path
-		att = MsiQueryProperty(node, _T("InstallPath"), szInstalledProductCode, cchSid == 0 ? NULL : szSid, dwInstalledContext, INSTALLPROPERTY_INSTALLLOCATION);
-
-		// Install Date (Needs parsing)
-		att = MsiQueryProperty(node, _T("InstallDate"), szInstalledProductCode, cchSid == 0 ? NULL : szSid, dwInstalledContext, INSTALLPROPERTY_INSTALLDATE);
-
-		// Install Source
-		att = MsiQueryProperty(node, _T("InstallSource"), szInstalledProductCode, cchSid == 0 ? NULL : szSid, dwInstalledContext, INSTALLPROPERTY_INSTALLSOURCE);
-
-		// Local cache file
-		att = MsiQueryProperty(node, _T("LocalCache"), szInstalledProductCode, cchSid == 0 ? NULL : szSid, dwInstalledContext, INSTALLPROPERTY_LOCALPACKAGE);
-
-		// Help Link
-		att = MsiQueryProperty(node, _T("HelpUrl"), szInstalledProductCode, cchSid == 0 ? NULL : szSid, dwInstalledContext, INSTALLPROPERTY_HELPLINK);
-
-		// Help Telephone
-		att = MsiQueryProperty(node, _T("HelpPhone"), szInstalledProductCode, cchSid == 0 ? NULL : szSid, dwInstalledContext, INSTALLPROPERTY_HELPTELEPHONE);
-
-		// About URL
-		att = MsiQueryProperty(node, _T("AboutUrl"), szInstalledProductCode, cchSid == 0 ? NULL : szSid, dwInstalledContext, INSTALLPROPERTY_URLINFOABOUT);
-
-		// Update URL
-		att = MsiQueryProperty(node, _T("UpdateUrl"), szInstalledProductCode, cchSid == 0 ? NULL : szSid, dwInstalledContext, INSTALLPROPERTY_URLUPDATEINFO);
-
-
-		node_append_child(packages, node);
+	// Get handle to packages registry key
+	// We could use MSI API but it won't return packages built 
+	// with Windows Installer versions prior to v3.0.
+	if (ERROR_SUCCESS != (dwRetVal = RegOpenKeyEx(HKEY_LOCAL_MACHINE, PACKAGES_REG_PATH, 0, KEY_READ, &hKey))) {
+		SetError(ERR_CRIT, dwRetVal, _T("Failed to enumerate installed packages"));
+		return packagesNode;
 	}
 
-	if (ERROR_NO_MORE_ITEMS != ret) {
-		SetError(ERR_CRIT, ret, _T("Failed to enumerate installed products"));
+	packagesNode = node_alloc(_T("Packages"), NFLG_TABLE);
+	
+	// Get all subkeys (one for each package)
+	dwIndex = 0;
+	while (ERROR_SUCCESS == (dwRetVal = RegEnumKeyEx(hKey, dwIndex++, szBuffer, &dwBufferSize, 0, NULL, NULL, NULL))) {
+		if (ERROR_SUCCESS == (dwRetVal = RegOpenKeyEx(hKey, szBuffer, 0, KEY_READ, &hSubkey))) {
+
+			// Get value of 'DisplayName' value
+			if (NULL != (pszBuffer = GetRegString(hSubkey, _T("DisplayName")))) {
+				packageNode = node_append_new(packagesNode, _T("Package"), NFLG_TABLE_ROW);
+				node_att_set(packageNode, _T("Name"), pszBuffer, 0);
+				FREE(pszBuffer);
+
+				// Add GUID for Windows Installer v3+ Packages (GUID key name)
+				if (38 == wcslen(szBuffer) && '{' == szBuffer[0] && '}' == szBuffer[37])
+					node_att_set(packageNode, _T("UpgradeCode"), szBuffer, NAFLG_FMT_GUID);
+
+				// Publisher
+				if (NULL != (pszBuffer = GetRegString(hSubkey, _T("Publisher")))) {
+					node_att_set(packageNode, _T("Publisher"), pszBuffer, 0);
+					FREE(pszBuffer);
+				}
+
+				// Version
+				if (NULL != (pszBuffer = GetRegString(hSubkey, _T("DisplayVersion")))) {
+					node_att_set(packageNode, _T("Version"), pszBuffer, 0);
+					FREE(pszBuffer);
+				}
+
+				// Install source
+				if (NULL != (pszBuffer = GetRegString(hSubkey, _T("InstallSource")))) {
+					node_att_set(packageNode, _T("InstallSource"), pszBuffer, 0);
+					FREE(pszBuffer);
+				}
+
+				// Install path
+				if (NULL != (pszBuffer = GetRegString(hSubkey, _T("InstallLocation")))) {
+					node_att_set(packageNode, _T("InstallLocation"), pszBuffer, 0);
+					FREE(pszBuffer);
+				}
+
+				// Install date
+				if (NULL != (pszBuffer = GetRegString(hSubkey, _T("InstallDate")))) {
+					node_att_set(packageNode, _T("InstallDate"), pszBuffer, 0);
+					FREE(pszBuffer);
+				}
+
+				// Help URL
+				if (NULL != (pszBuffer = GetRegString(hSubkey, _T("HelpLink")))) {
+					node_att_set(packageNode, _T("HelpUrl"), pszBuffer, NAFLG_FMT_URI);
+					FREE(pszBuffer);
+				}
+
+				// Help telephone
+				if (NULL != (pszBuffer = GetRegString(hSubkey, _T("HelpTelephone")))) {
+					node_att_set(packageNode, _T("HelpTelephone"), pszBuffer, 0);
+					FREE(pszBuffer);
+				}
+
+				// About URL
+				if (NULL != (pszBuffer = GetRegString(hSubkey, _T("URLInfoAbout")))) {
+					node_att_set(packageNode, _T("AboutUrl"), pszBuffer, NAFLG_FMT_URI);
+					FREE(pszBuffer);
+				}
+
+				// Upgrade URL
+				if (NULL != (pszBuffer = GetRegString(hSubkey, _T("URLUpdateInfo")))) {
+					node_att_set(packageNode, _T("UpdateUrl"), pszBuffer, NAFLG_FMT_URI);
+					FREE(pszBuffer);
+				}
+			}
+
+			RegCloseKey(hSubkey);
+		}
+
+		dwBufferSize = MAX_KEY_LEN;
 	}
 
-	return packages;
-}
-
-PNODE_ATT MsiQueryProperty(PNODE node, LPTSTR key, LPCTSTR szProductCode, LPCTSTR szUserSid, MSIINSTALLCONTEXT dwContext, LPCTSTR szProperty)
-{
-	PNODE_ATT att = NULL;
-    LPTSTR value = NULL;
- 
-    DWORD cchValue = 0;
-    UINT ret = MsiGetProductInfoEx(
-        szProductCode,
-        szUserSid,
-        dwContext,
-        szProperty,
-        NULL,
-        &cchValue);
- 
-    if(ret == ERROR_SUCCESS)
-    {
-        cchValue++;
-        value = (LPTSTR) LocalAlloc(LPTR, sizeof(TCHAR) * cchValue);
- 
-        ret = MsiGetProductInfoEx(
-            szProductCode,
-            szUserSid,
-            dwContext,
-            szProperty,
-            (LPTSTR)&value[0],
-            &cchValue);
-
-		att = node_att_set(node, key, value, 0);
-
-		LocalFree(value);
-    }
- 
-    return att;
+	RegCloseKey(hKey);
+	
+    return packagesNode;
 }

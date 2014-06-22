@@ -24,6 +24,7 @@
 #define NAFLG_FMT_DATETIME		0x0800							// Attribute value is expressed as a date and time
 #define NAFLG_FMT_IPADDR		0x1000							// Attribute value is an IPv4 or IPv6 address
 #define NAFLG_FMT_GUID			0x2000							// Attribute value is a GUID
+#define NAFLG_FMT_URI			0x4000							// Attribute value is a valid URI
 #define NAFLG_FMT_BYTES			0x010000 | NAFLG_FMT_NUMERIC	// Attribute value is expressed in bytes
 #define NAFLG_FMT_KBYTES		0x020000 | NAFLG_FMT_NUMERIC	// Attribute value is expressed in Kilobytes (2^10)
 #define NAFLG_FMT_MBYTES		0x040000 | NAFLG_FMT_NUMERIC	// Attribute value is expressed in Megabytes (2^20)
