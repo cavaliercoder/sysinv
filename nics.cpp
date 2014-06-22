@@ -9,6 +9,9 @@
 
 #define BUFFER_SIZE			16384
 
+#define	IPV4				0x02
+#define	IPV6				0x17
+
 DWORD IP_TO_UNICODE(LPSOCKADDR addr, DWORD addrLength, LPWSTR szBuffer, LPDWORD bufferSize);
 
 // http://www.iana.org/assignments/ianaiftype-mib/ianaiftype-mib
@@ -340,12 +343,6 @@ static LOOKUP_ENTRY IP_SUFFIX_ORIGINS[] = {
 		{ IpSuffixOriginRandom, _T("Unchanged"), NULL }
 };
 
-// sockaddr.sa_family
-static LOOKUP_ENTRY IP_ADDR_FAMILIES[] = {
-		{ 0x02, _T("IPv4"), NULL },
-		{ 0x17, _T("IPv6"), NULL }
-};
-
 DWORD IP_TO_UNICODE(LPSOCKADDR addr, DWORD addrLength, LPWSTR szBuffer, LPDWORD bufferSize) {
 	DWORD dwRetVal = 0;
 	WSADATA wsaData;
@@ -374,13 +371,23 @@ PNODE EnumNetworkInterfaces()
 {
 	PNODE nicsNode = node_alloc(_T("Interfaces"), NFLG_TABLE);
 	PNODE nicNode = NULL;
-	PNODE addressesNode = NULL;
+	PNODE linkNode = NULL;
+	PNODE ipv4Node = NULL;
+	PNODE ipv4AddressesNode = NULL;
+	PNODE ipv4DnsServersNode = NULL;
+	PNODE ipv6Node = NULL;
+	PNODE ipv6AddressesNode = NULL;
+	PNODE ipv6DnsServersNode = NULL;
 	PNODE addressNode = NULL;
+	PNODE dnsNode = NULL;
 
 	ULONG bufferSize = BUFFER_SIZE;
 	PIP_ADAPTER_ADDRESSES pAddresses = (PIP_ADAPTER_ADDRESSES) MALLOC(bufferSize);
 	PIP_ADAPTER_ADDRESSES pCurrent = pAddresses;
 	PIP_ADAPTER_UNICAST_ADDRESS pUnicast = NULL;
+	PIP_ADAPTER_MULTICAST_ADDRESS pMulticast = NULL;
+	PIP_ADAPTER_ANYCAST_ADDRESS pAnycast = NULL;
+	PIP_ADAPTER_DNS_SERVER_ADDRESS pDnsServer = NULL;
 	ULONG result = 0;
 	TCHAR szBuffer[SZBUFFERLEN];
 	LPTSTR pszBuffer = NULL;
@@ -402,17 +409,26 @@ PNODE EnumNetworkInterfaces()
 	// Parse each adapter
 	while (NULL != pCurrent) {
 		nicNode = node_append_new(nicsNode, _T("Interface"), NFLG_TABLE_ROW);
-
-		SWPRINTF(szBuffer, _T("%u"), pCurrent->IfIndex);
-		node_att_set(nicNode, _T("Ipv4Index"), szBuffer, NAFLG_KEY | NAFLG_FMT_NUMERIC);
-
-		SWPRINTF(szBuffer, _T("%u"), pCurrent->Ipv6IfIndex);
-		node_att_set(nicNode, _T("Ipv6Index"), szBuffer, NAFLG_KEY | NAFLG_FMT_NUMERIC);
+		linkNode = node_append_new(nicNode, _T("Link"), 0);
+		ipv4Node = node_append_new(nicNode, _T("IPv4"), 0);
+		ipv4AddressesNode = node_append_new(ipv4Node, _T("Addresses"), NFLG_TABLE);
+		ipv4DnsServersNode = node_append_new(ipv4Node, _T("DnsServers"), NFLG_TABLE);
+		ipv6Node = node_append_new(nicNode, _T("IPv6"), 0);
+		ipv6AddressesNode = node_append_new(ipv6Node, _T("Addresses"), NFLG_TABLE);
+		ipv6DnsServersNode = node_append_new(ipv6Node, _T("DnsServers"), NFLG_TABLE);
+		dnsNode = node_append_new(nicNode, _T("Dns"), 0);
+		
+		node_att_set(nicNode, _T("Name"), pCurrent->FriendlyName, NAFLG_KEY);
+		node_att_set(nicNode, _T("Description"), pCurrent->Description, 0);
 
 		UTF8_TO_UNICODE(pCurrent->AdapterName, szBuffer, SZBUFFERLEN);
 		node_att_set(nicNode, _T("Guid"), szBuffer, NAFLG_FMT_GUID);
 
-		node_att_set(nicNode, _T("Name"), pCurrent->FriendlyName, 0);
+		SWPRINTF(szBuffer, _T("%u"), pCurrent->IfIndex);
+		node_att_set(ipv4Node, _T("AdapterIndex"), szBuffer, NAFLG_KEY | NAFLG_FMT_NUMERIC);
+
+		SWPRINTF(szBuffer, _T("%u"), pCurrent->Ipv6IfIndex);
+		node_att_set(ipv6Node, _T("AdapterIndex"), szBuffer, NAFLG_KEY | NAFLG_FMT_NUMERIC);
 
 		// Interface type
 		if (NULL != (lookupResult = Lookup(IF_TYPES, pCurrent->IfType))) {
@@ -448,37 +464,53 @@ PNODE EnumNetworkInterfaces()
 				}
 			}
 
-			node_att_set(nicNode, _T("PhysicalAddress"), szBuffer, 0);
+			node_att_set(linkNode, _T("PhysicalAddress"), szBuffer, 0);
 		}
 
 		// Operational status
 		if (NULL != (lookupResult = Lookup(IF_OPER_STATUSES, pCurrent->OperStatus))) {
-			node_att_set(nicNode, _T("OperationalState"), lookupResult->Code, 0);
+			node_att_set(linkNode, _T("OperationalState"), lookupResult->Code, 0);
 		}
 		else {
-			node_att_set(nicNode, _T("OperationalState"), _T("Unknown"), NAFLG_ERROR);
+			node_att_set(linkNode, _T("OperationalState"), _T("Unknown"), NAFLG_ERROR);
 			SetError(ERR_WARN, 0, _T("Unknown Network Adapter Operational Status: %u"), pCurrent->OperStatus);
 		}
 
 		// Connection speed
 		SWPRINTF(szBuffer, _T("%I64u"), pCurrent->TransmitLinkSpeed);
-		node_att_set(nicNode, _T("TransmitSpeed"), szBuffer, NAFLG_FMT_NUMERIC);
+		node_att_set(linkNode, _T("TransmitSpeed"), szBuffer, NAFLG_FMT_NUMERIC);
 
 		SWPRINTF(szBuffer, _T("%I64u"), pCurrent->ReceiveLinkSpeed);
-		node_att_set(nicNode, _T("ReceiveSpeed"), szBuffer, NAFLG_FMT_NUMERIC);
+		node_att_set(linkNode, _T("ReceiveSpeed"), szBuffer, NAFLG_FMT_NUMERIC);
+
+		// Maximum Transmission Unit size
+		SWPRINTF(szBuffer, _T("%llu"), pCurrent->Mtu);
+		node_att_set(linkNode, _T("MtuSize"), szBuffer, NAFLG_FMT_BYTES);
+
+		// DNS suffix
+		node_att_set(dnsNode, _T("DnsSuffix"), pCurrent->DnsSuffix, 0);
 
 		// Unicast addresses
-		addressesNode = node_append_new(nicNode, _T("UnicastAddresses"), NFLG_TABLE);
 		pUnicast = pCurrent->FirstUnicastAddress;
 		while (NULL != pUnicast) {
-			addressNode = node_append_new(addressesNode, _T("UnicastAddress"), NFLG_TABLE_ROW);
+			switch (pUnicast->Address.lpSockaddr->sa_family) {
+			case IPV4:
+				addressNode = node_append_new(ipv4AddressesNode, _T("Address"), NFLG_TABLE_ROW);
+				break;
 
-			if (NULL != (lookupResult = Lookup(IP_ADDR_FAMILIES, pUnicast->Address.lpSockaddr->sa_family)))
-				node_att_set(addressNode, _T("Family"), lookupResult->Code, 0);
+			case IPV6:
+				addressNode = node_append_new(ipv6AddressesNode, _T("Address"), NFLG_TABLE_ROW);
+				break;
+
+			default:
+				SetError(ERR_WARN, 0, _T("Unknown Unicast IP Address family: %u"), pUnicast->Address.lpSockaddr->sa_family);
+				continue;
+			}
+			node_att_set(addressNode, _T("Type"), _T("Unicast"), 0);
 
 			bufferSize = ARRAYSIZE(szBuffer);
 			if (0 == IP_TO_UNICODE(pUnicast->Address.lpSockaddr, pUnicast->Address.iSockaddrLength, szBuffer, &bufferSize))
-				node_att_set(addressNode, _T("IPAddress"), szBuffer, NAFLG_FMT_IPADDR);
+				node_att_set(addressNode, _T("Address"), szBuffer, NAFLG_FMT_IPADDR);
 
 			// Is address a clustered address?
 			node_att_set_bool(addressNode, _T("Transient"), pUnicast->Flags & IP_ADAPTER_ADDRESS_TRANSIENT, 0);
@@ -497,6 +529,96 @@ PNODE EnumNetworkInterfaces()
 			}
 
 			pUnicast = pUnicast->Next;
+		}
+
+		// Multicast addresses
+		pMulticast = pCurrent->FirstMulticastAddress;
+		while (NULL != pMulticast) {
+			switch (pMulticast->Address.lpSockaddr->sa_family) {
+			case IPV4:
+				addressNode = node_append_new(ipv4AddressesNode, _T("Address"), NFLG_TABLE_ROW);
+				break;
+
+			case IPV6:
+				addressNode = node_append_new(ipv6AddressesNode, _T("Address"), NFLG_TABLE_ROW);
+				break;
+
+			default:
+				SetError(ERR_WARN, 0, _T("Unknown Multicast IP Address family: %u"), pMulticast->Address.lpSockaddr->sa_family);
+				continue;
+			}
+
+			node_att_set(addressNode, _T("Type"), _T("Multicast"), 0);
+
+			bufferSize = ARRAYSIZE(szBuffer);
+			if (0 == IP_TO_UNICODE(pMulticast->Address.lpSockaddr, pMulticast->Address.iSockaddrLength, szBuffer, &bufferSize))
+				node_att_set(addressNode, _T("Address"), szBuffer, 0);
+
+			// Is address a clustered address?
+			node_att_set_bool(addressNode, _T("Transient"), pMulticast->Flags & IP_ADAPTER_ADDRESS_TRANSIENT, 0);
+
+			// Eligible for DNS registration?
+			node_att_set_bool(addressNode, _T("DnsEligible"), pMulticast->Flags & IP_ADAPTER_ADDRESS_DNS_ELIGIBLE, 0);
+
+			pMulticast = pMulticast->Next;
+		}
+
+		// Anycast addresses
+		pAnycast = pCurrent->FirstAnycastAddress;
+		while (NULL != pAnycast) {
+			switch (pAnycast->Address.lpSockaddr->sa_family) {
+			case IPV4:
+				addressNode = node_append_new(ipv4AddressesNode, _T("Address"), NFLG_TABLE_ROW);
+				break;
+
+			case IPV6:
+				addressNode = node_append_new(ipv6AddressesNode, _T("Address"), NFLG_TABLE_ROW);
+				break;
+
+			default:
+				SetError(ERR_WARN, 0, _T("Unknown Anycast IP Address family: %u"), pAnycast->Address.lpSockaddr->sa_family);
+				continue;
+			}
+
+			bufferSize = ARRAYSIZE(szBuffer);
+			if (0 == IP_TO_UNICODE(pAnycast->Address.lpSockaddr, pAnycast->Address.iSockaddrLength, szBuffer, &bufferSize))
+				node_att_set(addressNode, _T("Address"), szBuffer, 0);
+
+			// Is address a clustered address?
+			node_att_set_bool(addressNode, _T("Transient"), pAnycast->Flags & IP_ADAPTER_ADDRESS_TRANSIENT, 0);
+
+			// Eligible for DNS registration?
+			node_att_set_bool(addressNode, _T("DnsEligible"), pAnycast->Flags & IP_ADAPTER_ADDRESS_DNS_ELIGIBLE, 0);
+
+			pAnycast = pAnycast->Next;
+		}
+
+		// DNS Servers
+		i = 0;
+		pDnsServer = pCurrent->FirstDnsServerAddress;
+		while (NULL != pDnsServer) {
+			switch (pDnsServer->Address.lpSockaddr->sa_family) {
+			case IPV4:
+				addressNode = node_append_new(ipv4DnsServersNode, _T("DnsServer"), NFLG_TABLE_ROW);
+				break;
+
+			case IPV6:
+				addressNode = node_append_new(ipv6DnsServersNode, _T("DnsServer"), NFLG_TABLE_ROW);
+				break;
+
+			default:
+				SetError(ERR_WARN, 0, _T("Unknown DNS Server IP Address family: %u"), pMulticast->Address.lpSockaddr->sa_family);
+				continue;
+			}
+
+			bufferSize = ARRAYSIZE(szBuffer);
+			if (0 == IP_TO_UNICODE(pDnsServer->Address.lpSockaddr, pDnsServer->Address.iSockaddrLength, szBuffer, &bufferSize))
+				node_att_set(addressNode, _T("Address"), szBuffer, 0);
+
+			SWPRINTF(szBuffer, _T("%u"), ++i);
+			node_att_set(addressNode, _T("Index"), szBuffer, 0);
+
+			pDnsServer = pDnsServer->Next;
 		}
 
 		// Flags
