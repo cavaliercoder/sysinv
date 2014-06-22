@@ -8,6 +8,24 @@
 
 PERROR_MESSAGE *errorLog = NULL;
 
+LPTSTR GetRegString(HKEY hKey, LPCTSTR name)
+{
+	LPTSTR pszBuffer = NULL;
+	DWORD dwBufferSize = 0;
+	DWORD dwRetVal = 0;
+
+	if (ERROR_SUCCESS == (dwRetVal = RegQueryValueEx(hKey, name, 0, NULL, NULL, &dwBufferSize))) {
+		if (NULL != (pszBuffer = (LPTSTR)MALLOC(dwBufferSize * 2))) {
+			if (ERROR_SUCCESS != (dwRetVal = RegQueryValueEx(hKey, name, NULL, NULL, (LPBYTE)pszBuffer, &dwBufferSize))) {
+				FREE(pszBuffer);
+				pszBuffer = NULL;
+			}
+		}
+	}
+
+	return pszBuffer;
+}
+
 int AppendMultiString(LPTSTR *lpmszMulti, LPCTSTR szNew)
 {
 	DWORD i = 0;

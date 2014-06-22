@@ -71,6 +71,7 @@ PLOOKUP_ENTRY _Lookup(PLOOKUP_ENTRY table, DWORD tableLength, DWORD index);
 void _SetError(LPCTSTR filename, LPCTSTR function, DWORD line, DWORD level, DWORD systemErrorCode, LPCTSTR message, ...);
 PNODE EnumErrorLog();
 
+LPTSTR GetRegString(HKEY hKey, LPCTSTR name);
 int AppendMultiString(LPTSTR *lpmszMulti, LPCTSTR szNew);
 LPCTSTR wcsistr(LPCTSTR haystack, LPCTSTR needle);
 

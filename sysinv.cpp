@@ -138,6 +138,9 @@ int main(int argc, CHAR* argv[])
 		// Get Software packages
 		node = EnumPackages();
 		node_append_child(software, node);
+
+		// Get hotfixes QFE
+		node_append_child(software, EnumHotfixes());
 	}
 	
 	if (getConfiguration) {

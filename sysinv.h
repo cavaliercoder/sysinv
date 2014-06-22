@@ -3,16 +3,17 @@
 #include "node.h"
 
 // Hardware
+PNODE GetSystemDetail();
 PNODE EnumSmbiosTables();
-PNODE EnumPackages();
+PNODE GetVirtualizationDetail();
 PNODE EnumProcessors();
 PNODE EnumDisks();
 
 // Software
 PNODE GetAgentDetail();
-PNODE GetSystemDetail();
 PNODE GetOperatingSystemDetail();
-PNODE GetVirtualizationDetail();
+PNODE EnumPackages();
+PNODE EnumHotfixes();
 
 // Configuration
 PNODE EnumNetworkInterfaces();
