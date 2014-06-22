@@ -621,14 +621,23 @@ PNODE EnumNetworkInterfaces()
 			pDnsServer = pDnsServer->Next;
 		}
 
-		// Flags
-		pszBuffer = NULL;
-		for (i = 0; i < ARRAYSIZE(IF_FLAGS); i++) {
-			if (CHECK_BIT(pCurrent->Flags, IF_FLAGS[i].Index))
-				AppendMultiString(&pszBuffer, IF_FLAGS[i].Description);
-		}
-		node_att_set_multi(nicNode, _T("Flags"), pszBuffer, 0);
-		LocalFree(pszBuffer);
+		// DNS Flags
+		node_att_set_bool(dnsNode, _T("DynamicDnsEnabled"), IP_ADAPTER_DDNS_ENABLED & pCurrent->Flags, 0);
+		node_att_set_bool(dnsNode, _T("RegisterSuffix"), IP_ADAPTER_REGISTER_ADAPTER_SUFFIX & pCurrent->Flags, 0);
+
+		// IPv4 Flags
+		node_att_set_bool(ipv4Node, _T("Enabled"), IP_ADAPTER_IPV4_ENABLED & pCurrent->Flags, 0);
+		node_att_set_bool(ipv4Node, _T("DhcpEnabled"), IP_ADAPTER_DHCP_ENABLED & pCurrent->Flags, 0);
+
+		// IPv6 Flags
+		node_att_set_bool(ipv6Node, _T("Enabled"), IP_ADAPTER_IPV6_ENABLED & pCurrent->Flags, 0);
+		node_att_set_bool(ipv6Node, _T("StatefulConfig"), IP_ADAPTER_IPV6_OTHER_STATEFUL_CONFIG & pCurrent->Flags, 0);
+		node_att_set_bool(ipv6Node, _T("ManagedAddressConfig"), IP_ADAPTER_IPV6_MANAGE_ADDRESS_CONFIG & pCurrent->Flags, 0);
+
+		// Interface flags
+		node_att_set_bool(nicNode, _T("ReceiveOnly"), IP_ADAPTER_RECEIVE_ONLY & pCurrent->Flags, 0);
+		node_att_set_bool(nicNode, _T("MulticastEnabled"), 0 == (IP_ADAPTER_NO_MULTICAST & pCurrent->Flags), 0);
+		node_att_set_bool(nicNode, _T("NetbiosOverTcpIp"), IP_ADAPTER_NETBIOS_OVER_TCPIP_ENABLED & pCurrent->Flags, 0);
 
 		pCurrent = pCurrent->Next;
 	}
