@@ -42,6 +42,7 @@ PNODE GetVolumeDetail(__in PNODE parent, __in LPTSTR volumeName)
 	DISK_EXTENT extent;
 	DWORD i;
 	UINT driveType;
+	ULARGE_INTEGER volSize;
 
 	// Allocate new node
 	volumeNode = node_alloc(L"Volume", NFLG_TABLE_ROW);
@@ -137,6 +138,12 @@ PNODE GetVolumeDetail(__in PNODE parent, __in LPTSTR volumeName)
 	)) {
 		node_att_set(volumeNode, L"Label", buffer[1], 0);
 		node_att_set(volumeNode, L"Format", buffer[2], 0);
+	}
+
+	// Get volume size
+	if (GetDiskFreeSpaceEx(volumeName, NULL, &volSize, NULL)) {
+		SWPRINTF(buffer[0], _T("%llu"), volSize.QuadPart);
+		node_att_set(volumeNode, L"Size", buffer[0], NAFLG_FMT_BYTES);
 	}
 
 	// Get disk extents
