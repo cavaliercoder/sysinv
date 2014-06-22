@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "node.h"
 
+#define NODE_BUFFER_LEN			255
+
 void fprintcx(FILE *file, const LPTSTR s, int count);
 PNODE_ATT node_alloc_att(LPCTSTR key, LPCTSTR value, int flags);
 PNODE_ATT node_alloc_att_multi(LPCTSTR key, LPCTSTR value, int flags);
@@ -503,8 +505,9 @@ int node_to_xml(PNODE node, FILE *file, int flags)
 	int hasChildren = 0;
 	int indent = (0 == (flags & NODE_XML_FLAG_NOWS)) ? indent_depth : 0;
 	LPTSTR nl = flags & NODE_XML_FLAG_NOWS ? L"" : NODE_XML_DELIM_NL;
+	LPTSTR tab = flags & NODE_XML_FLAG_NOWS ? L"" : NODE_XML_DELIM_INDENT;
 	LPTSTR key, val;
-	TCHAR strBuffer[MAX_PATH + 1];
+	TCHAR strBuffer[NODE_BUFFER_LEN];
 
 	hasChildren = (children > 0) || ((flags & NODE_XML_FLAG_NOATTS) && atts > 0);
 
@@ -513,19 +516,20 @@ int node_to_xml(PNODE node, FILE *file, int flags)
 		fwprintf(file, L"<?xml version=\"1.0\" encoding=\"Windows-1252\" standalone=\"yes\" ?>%s", nl);
 
 	// Indentation
-	fprintcx(file, NODE_XML_DELIM_INDENT, indent);
+	fprintcx(file, tab, indent);
 
 	// Open element
 	fwprintf(file, L"<%s", node->Name);
 
 	// Print inline attributes
 	if(0 == (flags & NODE_XML_FLAG_NOATTS)) {
+
 		// Print as inline attributes
-		for(i = 0; i < atts; i++)
-			fwprintf(file, L" %s=\"%s\"", 
-				node->Attributes[i].LinkedAttribute->Key, 
-				node->Attributes[i].LinkedAttribute->Value);
-		
+		for (i = 0; i < atts; i++) {
+
+			xml_escape_content(node->Attributes[i].LinkedAttribute->Value, strBuffer, NODE_BUFFER_LEN);
+			fwprintf(file, L" %s=\"%s\"", node->Attributes[i].LinkedAttribute->Key, strBuffer);
+		}
 	}
 	
 	if(0 != (node->Flags & NFLG_TABLE)) {
@@ -548,10 +552,9 @@ int node_to_xml(PNODE node, FILE *file, int flags)
 			val = node->Attributes[i].LinkedAttribute->Value;
 
 			// XML Escape value
-			xml_escape_content(val, strBuffer, MAX_PATH + 1);
+			xml_escape_content(val, strBuffer, NODE_BUFFER_LEN);
 
-			fprintcx(file, NODE_XML_DELIM_INDENT, indent + 1);
-
+			fprintcx(file, tab, indent + 1);
 
 			// Print non-array
 			if (0 == (NAFLG_ARRAY & node->Attributes[i].LinkedAttribute->Flags)) {
@@ -562,9 +565,9 @@ int node_to_xml(PNODE node, FILE *file, int flags)
 				// Print array
 				fwprintf(file, L"<%s>%s", key, nl);
 				while ('\0' != *val) {
-					xml_escape_content(val, strBuffer, MAX_PATH + 1);
+					xml_escape_content(val, strBuffer, NODE_BUFFER_LEN);
 
-					fprintcx(file, NODE_XML_DELIM_INDENT, indent + 2);
+					fprintcx(file, tab, indent + 2);
 					fwprintf(file, L"<Item Id=\"%u\">%s</Item>%s", v, strBuffer, nl);
 
 					// Move cursor to next string
@@ -572,7 +575,7 @@ int node_to_xml(PNODE node, FILE *file, int flags)
 					v++;
 				}
 
-				fprintcx(file, NODE_XML_DELIM_INDENT, indent + 1);
+				fprintcx(file, tab, indent + 1);
 				fwprintf(file, L"</%s>%s", key, nl);
 			}
 		}
@@ -587,7 +590,7 @@ int node_to_xml(PNODE node, FILE *file, int flags)
 
 	if(0 != hasChildren) {
 		// Indentation
-		fprintcx(file, NODE_XML_DELIM_INDENT, indent);
+		fprintcx(file, tab, indent);
 
 		//Close element
 		fwprintf(file, L"</%s>%s", node->Name, nl);

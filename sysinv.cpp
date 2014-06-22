@@ -172,7 +172,7 @@ int main(int argc, CHAR* argv[])
 	// Print
 	switch(format) {
 	case OUT_XML:
-		node_to_xml(root, out, NODE_XML_FLAG_NOATTS);
+		node_to_xml(root, out, 0);
 		break;
 
 	case OUT_JSON:
