@@ -43,6 +43,7 @@ PNODE GetVolumeDetail(__in PNODE parent, __in LPTSTR volumeName)
 	DWORD i;
 	UINT driveType;
 	ULARGE_INTEGER volSize;
+	DWORD dwRetVal = 0;
 
 	// Allocate new node
 	volumeNode = node_alloc(L"Volume", NFLG_TABLE_ROW);
@@ -107,13 +108,14 @@ PNODE GetVolumeDetail(__in PNODE parent, __in LPTSTR volumeName)
 	bufferSize = sizeof(TCHAR) * maxBufferSize;
 	dbuffer = (LPTSTR) LocalAlloc(LPTR, bufferSize);
 	while(!GetVolumePathNamesForVolumeName(volumeName, dbuffer, bufferSize, &bufferSize)) {
-		if(ERROR_MORE_DATA == GetLastError()) {
+		if(ERROR_MORE_DATA == (dwRetVal = GetLastError())) {
 			LocalFree(dbuffer);
 			bufferSize *= 2;
 			dbuffer = (LPTSTR) LocalAlloc(LPTR, sizeof(TCHAR) * bufferSize);
 		}
 
 		else {
+			SetError(ERR_CRIT, dwRetVal, _T("Failed to enumerate mount paths for volume %s"), volumeName);
 			LocalFree(dbuffer);
 			dbuffer = NULL;
 			break;
@@ -144,26 +146,34 @@ PNODE GetVolumeDetail(__in PNODE parent, __in LPTSTR volumeName)
 	if (GetDiskFreeSpaceEx(volumeName, NULL, &volSize, NULL)) {
 		SWPRINTF(buffer[0], _T("%llu"), volSize.QuadPart);
 		node_att_set(volumeNode, L"Size", buffer[0], NAFLG_FMT_BYTES);
+	} 
+	else {
+		// Forgive ERROR_NOT_READY as it is expected for unmounted CDROM and Floppy drives
+		if (ERROR_NOT_READY != (dwRetVal = GetLastError()) || DRIVE_FIXED == driveType)
+			SetError(ERR_WARN, GetLastError(), _T("Failed to get volume size for %s"), volumeName);
 	}
 
 	// Get disk extents
-	if(INVALID_HANDLE_VALUE != hVolume) {
+	if(INVALID_HANDLE_VALUE != hVolume && DRIVE_FIXED == driveType) {
 		ret = 0;
 		bufferSize = sizeof(VOLUME_DISK_EXTENTS);
 		extents = (VOLUME_DISK_EXTENTS *) LocalAlloc(LPTR, bufferSize);
 		while(!DeviceIoControl(hVolume, IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS, NULL, 0, (LPVOID) extents, bufferSize, &ret, NULL)) {
-			if(ERROR_MORE_DATA == GetLastError()) {
+			if(ERROR_MORE_DATA == (dwRetVal = GetLastError())) {
 				bufferSize *= 2;
 				LocalFree(extents);
 				extents = (VOLUME_DISK_EXTENTS *) LocalAlloc(LPTR, bufferSize);
 			}
 
 			else {
+				SetError(ERR_CRIT, dwRetVal, _T("Failed to get disk extents for volume %s"), volumeName);
+				LocalFree(extents);
+				extents = NULL;
 				break;
 			}
 		}
 
-		if(0 < extents->NumberOfDiskExtents) {
+		if(NULL != extents && 0 < extents->NumberOfDiskExtents) {
 			extentsNode = node_alloc(L"DiskExtents", NFLG_TABLE);
 			node_append_child(volumeNode, extentsNode);
 			for(i = 0; i < extents->NumberOfDiskExtents; i++) {
