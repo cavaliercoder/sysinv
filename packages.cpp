@@ -41,6 +41,11 @@ PNODE EnumPackages()
 	// Get all subkeys (one for each package)
 	dwIndex = 0;
 	while (ERROR_SUCCESS == (dwRetVal = RegEnumKeyEx(hKey, dwIndex++, szBuffer, &dwBufferSize, 0, NULL, NULL, NULL))) {
+		// Prevent KBXXXXXXXX packages from being read on Win2003/XP systems
+		// These are enumerated as Hotfixes
+		if (0 == wcsncmp(szBuffer, _T("KB"), 2))
+			goto cleanup_package;
+
 		if (ERROR_SUCCESS == (dwRetVal = RegOpenKeyEx(hKey, szBuffer, 0, KEY_READ, &hSubkey))) {
 
 			// Get value of 'DisplayName' value
@@ -110,6 +115,8 @@ PNODE EnumPackages()
 
 			RegCloseKey(hSubkey);
 		}
+
+	cleanup_package:
 
 		dwBufferSize = MAX_KEY_LEN;
 	}
