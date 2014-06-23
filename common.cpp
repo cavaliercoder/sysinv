@@ -124,13 +124,14 @@ void _SetError(LPCTSTR filename, LPCTSTR function, DWORD line, DWORD level, DWOR
 	wvnsprintf(buffer, MAX_ERROR_LEN, message, args);
 	va_end(args);
 
-	// Convert filename to wide
-
 	// Allocate
 	size = (DWORD)(sizeof(ERROR_MESSAGE) + (sizeof(TCHAR) * (wcslen(buffer) + 1)));
 	
-	if (NULL != filename)
-		size += (DWORD) (sizeof(TCHAR) * wcslen(filename));
+	if (NULL != filename) {
+		filename = PathFindFileName(filename);
+		size += (DWORD)(sizeof(TCHAR)* wcslen(filename));
+	}
+		
 
 	if (NULL != function)
 		size += (DWORD) (sizeof(TCHAR) * wcslen(function));
