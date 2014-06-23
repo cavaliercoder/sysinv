@@ -51,7 +51,6 @@ PNODE GetDiskDetail(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 	DRIVE_LAYOUT_INFORMATION_EX *diskLayout = NULL;
 	DISK_GEOMETRY_EX *diskGeometry = NULL;
 	SCSI_ADDRESS *scsiAddress = NULL;
-
 	DWORD error = 0;
 
 	// Create return node
@@ -75,7 +74,6 @@ PNODE GetDiskDetail(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 		SetError(ERR_CRIT, GetLastError(), _T("Failed to get SP_DEVICE_INTERFACE_DATA structure for disk device %u"), index);
 		goto error;
 	}
-
 
 	// SP_INTERFACE_DEVICE_DETAIL_DATA* detailData;
 	// Get device interface details (used to get device path and subsequently, file handle)
@@ -129,12 +127,12 @@ PNODE GetDiskDetail(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 	while (!DeviceIoControl(hDiskDrive, IOCTL_DISK_GET_DRIVE_LAYOUT_EX, NULL, 0, diskLayout, bufferSize, &bufferSize, NULL)) {
 		LocalFree(diskLayout);
 		diskLayout = NULL;
-		if (ERROR_INSUFFICIENT_BUFFER == GetLastError()) {
+		if (ERROR_INSUFFICIENT_BUFFER == (error = GetLastError())) {
 			bufferSize *= 2;
 			diskLayout = (DRIVE_LAYOUT_INFORMATION_EX *)LocalAlloc(LPTR, bufferSize);
 		}
 		else {
-			SetError(ERR_CRIT, GetLastError(), _T("Failed to get partition layout for disk device %u"), index);
+			SetError(ERR_CRIT, error, _T("Failed to get partition layout for disk device %u"), index);
 			break;
 		}
 	}
@@ -145,7 +143,7 @@ PNODE GetDiskDetail(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 	scsiAddress = (SCSI_ADDRESS *)LocalAlloc(LPTR, bufferSize);
 	scsiAddress->Length = bufferSize;
 	while (!DeviceIoControl(hDiskDrive, IOCTL_SCSI_GET_ADDRESS, NULL, 0, scsiAddress, bufferSize, &bufferSize, NULL)) {
-		if (ERROR_INSUFFICIENT_BUFFER == GetLastError()) {
+		if (ERROR_INSUFFICIENT_BUFFER == (error = GetLastError())) {
 			if (scsiAddress) LocalFree(scsiAddress);
 			bufferSize *= 2;
 			scsiAddress = (PSCSI_ADDRESS)LocalAlloc(LPTR, bufferSize);
@@ -154,7 +152,7 @@ PNODE GetDiskDetail(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 			if (scsiAddress) LocalFree(scsiAddress);
 			scsiAddress = NULL;
 
-			SetError(ERR_WARN, GetLastError(), _T("Failed to get SCSI_ADDRESS for disk device %u"), index);
+			SetError(ERR_WARN, error, _T("Failed to get SCSI_ADDRESS for disk device %u"), index);
 		}
 	}
 
