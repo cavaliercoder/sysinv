@@ -16,6 +16,9 @@
 
 #define MAX_KEY_LEN					255
 
+void EnumWin51Hotfixes(PNODE hotfixesNode);
+void EnumWin6Hotfixes(PNODE hotfixesNode);
+
 PNODE EnumPackages()
 {
 	PNODE packagesNode = NULL;
@@ -136,6 +139,16 @@ PNODE EnumPackages()
 PNODE EnumHotfixes()
 {
 	PNODE hotfixesNode = NULL;
+	hotfixesNode = node_alloc(_T("Hotfixes"), NFLG_TABLE);
+
+	///EnumWin6Hotfixes(hotfixesNode);
+	EnumWin51Hotfixes(hotfixesNode);
+
+	return hotfixesNode;
+}
+
+void EnumWin6Hotfixes(PNODE hotfixesNode)
+{
 	PNODE hotfixNode = NULL;
 	HKEY hKey = NULL;
 	HKEY hSubkey = NULL;
@@ -145,15 +158,15 @@ PNODE EnumHotfixes()
 	TCHAR szBuffer[MAX_KEY_LEN];
 	LPTSTR pszBuffer = NULL;
 
+
 	// Get handle to hotfixes registry key
 	// We could use MSI API but it won't return hotfixes built 
 	// with Windows Installer versions prior to v3.0.
 	if (ERROR_SUCCESS != (dwRetVal = RegOpenKeyEx(HKEY_LOCAL_MACHINE, HOTFIXES_REG_PATH, 0, KEY_READ, &hKey))) {
 		SetError(ERR_CRIT, dwRetVal, _T("Failed to enumerate installed hotfixes"));
-		return hotfixesNode;
+		return;
 	}
 
-	hotfixesNode = node_alloc(_T("Hotfixes"), NFLG_TABLE);
 
 	// Get all subkeys (one for each hotfix)
 	dwIndex = 0;
@@ -199,6 +212,72 @@ cleanup_key:
 	}
 
 	RegCloseKey(hKey);
+}
 
-	return hotfixesNode;
+void EnumWin51Hotfixes(PNODE hotfixesNode)
+{
+	PNODE hotfixNode = NULL;
+	HKEY hKey = NULL;
+	HKEY hSubkey = NULL;
+	DWORD dwRetVal = 0;
+	DWORD dwIndex = 0;
+	DWORD dwBufferSize = MAX_KEY_LEN;
+	TCHAR szBuffer[MAX_KEY_LEN];
+	LPTSTR pszBuffer = NULL;
+
+	// Get handle to packages registry key
+	// We could use MSI API but it won't return packages built 
+	// with Windows Installer versions prior to v3.0.
+	if (ERROR_SUCCESS != (dwRetVal = RegOpenKeyEx(HKEY_LOCAL_MACHINE, PACKAGES_REG_PATH, 0, KEY_READ, &hKey))) {
+		SetError(ERR_CRIT, dwRetVal, _T("Failed to enumerate installed packages"));
+		return;
+	}
+
+	// Get all subkeys (one for each package)
+	dwIndex = 0;
+	while (ERROR_SUCCESS == (dwRetVal = RegEnumKeyEx(hKey, dwIndex++, szBuffer, &dwBufferSize, 0, NULL, NULL, NULL))) {
+		// Only read KBXXXXXXXX registry keys
+		if (0 == wcsncmp(szBuffer, _T("KB"), 2) && ERROR_SUCCESS == (dwRetVal = RegOpenKeyEx(hKey, szBuffer, 0, KEY_READ, &hSubkey))) {
+			// Get value of 'DisplayName' value
+			if (NULL != (pszBuffer = GetRegString(hSubkey, _T("DisplayName")))) {
+				// Create hotfix node!
+				hotfixNode = node_alloc(_T("Hotfix"), NFLG_TABLE_ROW);
+				
+				// KB Reference
+				node_att_set(hotfixNode, _T("KbArticle"), szBuffer, NAFLG_KEY);
+
+				// Display name
+				hotfixNode = node_append_new(hotfixesNode, _T("Hotfix"), NFLG_TABLE_ROW);
+				node_att_set(hotfixNode, _T("Name"), pszBuffer, NAFLG_KEY);
+				FREE(pszBuffer);
+
+				// Release type
+				if (NULL != (pszBuffer = GetRegString(hSubkey, _T("ReleaseType")))) {
+					node_att_set(hotfixNode, _T("Type"), pszBuffer, 0);
+					FREE(pszBuffer);
+				}
+
+				// URL
+				if (NULL != (pszBuffer = GetRegString(hSubkey, _T("HelpLink")))) {
+					node_att_set(hotfixNode, _T("Url"), pszBuffer, NAFLG_FMT_URI);
+					FREE(pszBuffer);
+				}
+
+				// Install date
+				// TODO: Parse Install Date for a useful format
+				if (NULL != (pszBuffer = GetRegString(hSubkey, _T("InstallDate")))) {
+					node_att_set(hotfixNode, _T("InstallDate"), pszBuffer, NAFLG_FMT_DATETIME);
+					FREE(pszBuffer);
+				}
+			}
+
+			RegCloseKey(hSubkey);
+		}
+
+	cleanup_package:
+
+		dwBufferSize = MAX_KEY_LEN;
+	}
+
+	RegCloseKey(hKey);
 }
