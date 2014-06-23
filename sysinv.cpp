@@ -77,6 +77,9 @@ int main(int argc, CHAR* argv[])
 	
 	free(argList);
 
+	// Configure error handling to prevent dialog boxes
+	SetErrorMode(SEM_FAILCRITICALERRORS);
+
 	// Build info nodes
 	root = GetSystemDetail();
 	
