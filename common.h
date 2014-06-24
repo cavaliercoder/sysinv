@@ -21,6 +21,9 @@
 
 #define SZBUFFERLEN		0x100
 
+#define DATE_FORMAT		L"yyyy-MM-dd"
+#define TIME_FORMAT		L"HH:mm:ssZ"
+
 #ifdef _DEBUG
 #define SetError(level, systemErrorCode, message, ...)	_SetError(__FILEW__, __FUNCTIONW__, __LINE__, level, systemErrorCode, message, __VA_ARGS__)
 #else
@@ -28,7 +31,7 @@
 #endif
 
 #define MALLOC(uBytes)					LocalAlloc(LPTR, uBytes)
-#define FREE(p)							LocalFree(p)
+#define FREE(p)							LocalFree(p); p = NULL
 
 #define DPRINT(format, ...)				fwprintf(stderr, format, __VA_ARGS__)
 #define SWPRINTF(szBuffer, format, ...)	swprintf_s((wchar_t *)&szBuffer[0], (size_t)ARRAYSIZE(szBuffer), format, __VA_ARGS__)
@@ -37,6 +40,8 @@
 #define UTF8_TO_UNICODE(utf8, unicode, bufferSize)		MultiByteToWideChar(CP_UTF8, 0, utf8, -1, unicode, bufferSize)
 
 #define Lookup(table, index)			_Lookup(&table[0], ARRAYSIZE(table), index)
+
+#define FileExists(filePath)			(INVALID_FILE_ATTRIBUTES != GetFileAttributes(filePath))
 
 #define CHECK_BIT(var,n)				((var) & (1 << (n)))
 #define SAFE_INDEX(var, i)				var[ARRAYSIZE(var) > i ? i : 0]
@@ -73,6 +78,12 @@ void _SetError(LPCTSTR filename, LPCTSTR function, DWORD line, DWORD level, DWOR
 PNODE EnumErrorLog();
 
 LPTSTR GetRegString(HKEY hKey, LPCTSTR name);
+DWORD GetRegDword(HKEY hKey, LPCTSTR name);
+
+BOOL FormatDateTime(const SYSTEMTIME time, LPWSTR szBuffer, const DWORD dwBufferSize);
+BOOL FormatDateTime(const PFILETIME time, LPWSTR szBuffer, const DWORD dwBufferSize);
+BOOL FormatDateTime(const DWORD high, const DWORD low, LPWSTR szBuffer, const DWORD dwBufferSize);
+
 int AppendMultiString(LPTSTR *lpmszMulti, LPCTSTR szNew);
 LPCTSTR wcsistr(LPCTSTR haystack, LPCTSTR needle);
 

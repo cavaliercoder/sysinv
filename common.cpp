@@ -26,6 +26,46 @@ LPTSTR GetRegString(HKEY hKey, LPCTSTR name)
 	return pszBuffer;
 }
 
+DWORD GetRegDword(HKEY hKey, LPCTSTR name)
+{
+	DWORD dwBuffer;
+	DWORD dwBufferSize = sizeof(dwBuffer);
+	DWORD dwRetVal = 0;
+
+	if (ERROR_SUCCESS == (dwRetVal = RegQueryValueEx(hKey, name, 0, NULL, (LPBYTE) &dwBuffer, &dwBufferSize))) {
+		return dwBuffer;
+	}
+
+	return -1;
+}
+
+BOOL FormatDateTime(const SYSTEMTIME time, LPWSTR szBuffer, const DWORD dwBufferSize)
+{
+	DWORD i = 0;
+	if (i = GetDateFormat(LOCALE_SYSTEM_DEFAULT, 0, &time, DATE_FORMAT, szBuffer, dwBufferSize)) {
+		szBuffer[i - 1] = ' ';
+		if (i += GetTimeFormat(LOCALE_SYSTEM_DEFAULT, 0, &time, TIME_FORMAT, &szBuffer[i], dwBufferSize - i)) {
+			return i;
+		}
+	}
+
+	return 0;
+}
+
+BOOL FormatDateTime(const PFILETIME time, LPWSTR szBuffer, const DWORD dwBufferSize)
+{
+	SYSTEMTIME st;
+	if (0 == FileTimeToSystemTime(time, &st))
+		return 0;
+	return FormatDateTime(st, szBuffer, dwBufferSize);
+}
+
+BOOL FormatDateTime(const DWORD high, const DWORD low, LPWSTR szBuffer, const DWORD dwBufferSize)
+{
+	FILETIME ft = { low, high };
+	return FormatDateTime(&ft, szBuffer, dwBufferSize);
+}
+
 int AppendMultiString(LPTSTR *lpmszMulti, LPCTSTR szNew)
 {
 	DWORD i = 0;
