@@ -38,9 +38,9 @@ PNODE GetSystemDetail()
 
 	// Get time stamp (Universal full format eg. 2009-06-15 20:45:30Z)
 	GetSystemTime(&systemTime);
-	if (cursor = GetDateFormat(LOCALE_SYSTEM_DEFAULT, 0, &systemTime, _T("yyyy-MM-dd"), szSystemTime, MAX_PATH + 1)) {
+	if (cursor = GetDateFormat(LOCALE_SYSTEM_DEFAULT, 0, &systemTime, DATE_FORMAT, szSystemTime, MAX_PATH + 1)) {
 		szSystemTime[cursor - 1] = ' ';
-		if (GetTimeFormat(LOCALE_SYSTEM_DEFAULT, 0, &systemTime, _T("HH:mm:ssZ"), &szSystemTime[cursor], MAX_PATH + 1)) {
+		if (GetTimeFormat(LOCALE_SYSTEM_DEFAULT, 0, &systemTime, TIME_FORMAT, &szSystemTime[cursor], MAX_PATH + 1)) {
 			node_att_set(node, _T("Timestamp"), szSystemTime, NAFLG_FMT_DATETIME);
 		}
 	}
