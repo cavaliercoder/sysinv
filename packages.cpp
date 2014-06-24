@@ -301,6 +301,12 @@ void EnumWin6Hotfixes(PNODE hotfixesNode)
 				}
 			}
 
+			// DEBUG: CurrentState should be 0x70???
+			if (-1 != (dwRetVal = GetRegDword(hSubkey, _T("CurrentState")))) {
+				SWPRINTF(szBuffer, L"0x%X (%u)", dwRetVal, dwRetVal);
+				node_att_set(hotfixNode, L"State", szBuffer, 0);
+			}
+
 			// Parse the first chunk of the file for hostfix info
 			if (ReadFile(hFile, szFileBuffer, ARRAYSIZE(szFileBuffer), &dwRetVal, NULL) && dwRetVal) {
 				// KB Reference
