@@ -147,11 +147,18 @@ PNODE EnumPackages()
  */
 PNODE EnumHotfixes()
 {
+	OSVERSIONINFOEX osinfo;
 	PNODE hotfixesNode = NULL;
-	hotfixesNode = node_alloc(_T("Hotfixes"), NFLG_TABLE);
 
-	EnumWin6Hotfixes(hotfixesNode);
+	// Get Windows version
+	osinfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+	GetVersionEx((LPOSVERSIONINFOW)&osinfo);
+
+	hotfixesNode = node_alloc(_T("Hotfixes"), NFLG_TABLE);
 	EnumWin51Hotfixes(hotfixesNode);
+
+	if (6 <= osinfo.dwMajorVersion)
+		EnumWin6Hotfixes(hotfixesNode);
 
 	return hotfixesNode;
 }
@@ -167,6 +174,8 @@ void EnumWin51Hotfixes(PNODE hotfixesNode)
 	DWORD dwBufferSize = MAX_KEY_LEN;
 	TCHAR szBuffer[MAX_KEY_LEN];
 	LPTSTR pszBuffer = NULL;
+
+	// TODO: Detect QXXXXXX and 'File 1' (From service pack) updates
 
 	// Get handle to packages registry key
 	// We could use MSI API but it won't return packages built 
