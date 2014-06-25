@@ -419,17 +419,19 @@ PNODE EnumNetworkInterfaces()
 		ipv6DnsServersNode = node_append_new(ipv6Node, _T("DnsServers"), NFLG_TABLE);
 		dnsNode = node_append_new(nicNode, _T("Dns"), 0);
 		
+		// DEBUG
+		SWPRINTF(szBuffer, L"%u", pCurrent->Length);
+		node_att_set(nicNode, L"SIZE", szBuffer, 0);
+
 		node_att_set(nicNode, _T("Name"), pCurrent->FriendlyName, NAFLG_KEY);
 		node_att_set(nicNode, _T("Description"), pCurrent->Description, 0);
 
 		UTF8_TO_UNICODE(pCurrent->AdapterName, szBuffer, SZBUFFERLEN);
 		node_att_set(nicNode, _T("Guid"), szBuffer, NAFLG_FMT_GUID);
 
+		// IPv4 Adapter index
 		SWPRINTF(szBuffer, _T("%u"), pCurrent->IfIndex);
 		node_att_set(ipv4Node, _T("AdapterIndex"), szBuffer, NAFLG_KEY | NAFLG_FMT_NUMERIC);
-
-		SWPRINTF(szBuffer, _T("%u"), pCurrent->Ipv6IfIndex);
-		node_att_set(ipv6Node, _T("AdapterIndex"), szBuffer, NAFLG_KEY | NAFLG_FMT_NUMERIC);
 
 		// Interface type
 		if (NULL != (lookupResult = Lookup(IF_TYPES, pCurrent->IfType))) {
@@ -439,16 +441,6 @@ PNODE EnumNetworkInterfaces()
 		else {
 			node_att_set(nicNode, _T("Type"), _T("Unknown"), NAFLG_ERROR);
 			SetError(ERR_WARN, 0, _T("Unknown Network Adapter Type: %u"), pCurrent->IfType);
-		}
-
-		// Connection type
-		if (NULL != (lookupResult = Lookup(IF_CONN_TYPES, pCurrent->ConnectionType))) {
-			node_att_set(nicNode, _T("ConnectionType"), lookupResult->Code, 0);
-		}
-
-		else {
-			node_att_set(nicNode, _T("ConnectionType"), _T("Unknown"), NAFLG_ERROR);
-			SetError(ERR_WARN, 0, _T("Unknown Connection Type: %u"), pCurrent->IfType);
 		}
 
 		// Parse Physical Address (MAC)
@@ -467,29 +459,6 @@ PNODE EnumNetworkInterfaces()
 
 			node_att_set(linkNode, _T("PhysicalAddress"), szBuffer, 0);
 		}
-
-		// Operational status
-		if (NULL != (lookupResult = Lookup(IF_OPER_STATUSES, pCurrent->OperStatus))) {
-			node_att_set(linkNode, _T("OperationalState"), lookupResult->Code, 0);
-		}
-		else {
-			node_att_set(linkNode, _T("OperationalState"), _T("Unknown"), NAFLG_ERROR);
-			SetError(ERR_WARN, 0, _T("Unknown Network Adapter Operational Status: %u"), pCurrent->OperStatus);
-		}
-
-		// Connection speed
-		SWPRINTF(szBuffer, _T("%I64u"), pCurrent->TransmitLinkSpeed);
-		node_att_set(linkNode, _T("TransmitSpeed"), szBuffer, NAFLG_FMT_NUMERIC);
-
-		SWPRINTF(szBuffer, _T("%I64u"), pCurrent->ReceiveLinkSpeed);
-		node_att_set(linkNode, _T("ReceiveSpeed"), szBuffer, NAFLG_FMT_NUMERIC);
-
-		// Maximum Transmission Unit size
-		SWPRINTF(szBuffer, _T("%llu"), pCurrent->Mtu);
-		node_att_set(linkNode, _T("MtuSize"), szBuffer, NAFLG_FMT_BYTES);
-
-		// DNS suffix
-		node_att_set(dnsNode, _T("DnsSuffix"), pCurrent->DnsSuffix, 0);
 
 		// Unicast addresses
 		pUnicast = pCurrent->FirstUnicastAddress;
@@ -639,6 +608,59 @@ PNODE EnumNetworkInterfaces()
 		node_att_set_bool(nicNode, _T("ReceiveOnly"), IP_ADAPTER_RECEIVE_ONLY & pCurrent->Flags, 0);
 		node_att_set_bool(nicNode, _T("MulticastEnabled"), 0 == (IP_ADAPTER_NO_MULTICAST & pCurrent->Flags), 0);
 		node_att_set_bool(nicNode, _T("NetbiosOverTcpIp"), IP_ADAPTER_NETBIOS_OVER_TCPIP_ENABLED & pCurrent->Flags, 0);
+
+		// Maximum Transmission Unit size
+		SWPRINTF(szBuffer, _T("%llu"), pCurrent->Mtu);
+		node_att_set(linkNode, _T("MtuSize"), szBuffer, NAFLG_FMT_BYTES);
+
+		// Operational status
+		if (NULL != (lookupResult = Lookup(IF_OPER_STATUSES, pCurrent->OperStatus))) {
+			node_att_set(linkNode, _T("OperationalState"), lookupResult->Code, 0);
+		}
+		else {
+			node_att_set(linkNode, _T("OperationalState"), _T("Unknown"), NAFLG_ERROR);
+			SetError(ERR_WARN, 0, _T("Unknown Network Adapter Operational Status: %u"), pCurrent->OperStatus);
+		}
+
+		/*************************/
+		/* Windows XP/2003 SP1 + */
+		/*************************/
+
+		// IPv6 Adapter index
+		SWPRINTF(szBuffer, _T("%u"), pCurrent->Ipv6IfIndex);
+		node_att_set(ipv6Node, _T("AdapterIndex"), szBuffer, NAFLG_KEY | NAFLG_FMT_NUMERIC);
+
+		/************************/
+		/* Windows Vista/2008 + */
+		/************************/
+		if (pCurrent->Length <= 144) //  Structure size in XP/2003 SP1 is 144
+			goto next_adapter;
+
+		// Connection speed
+		SWPRINTF(szBuffer, _T("%I64u"), pCurrent->TransmitLinkSpeed);
+		node_att_set(linkNode, _T("TransmitSpeed"), szBuffer, NAFLG_FMT_NUMERIC);
+
+		SWPRINTF(szBuffer, _T("%I64u"), pCurrent->ReceiveLinkSpeed);
+		node_att_set(linkNode, _T("ReceiveSpeed"), szBuffer, NAFLG_FMT_NUMERIC);
+
+		// Connection type
+		if (NULL != (lookupResult = Lookup(IF_CONN_TYPES, pCurrent->ConnectionType))) {
+			node_att_set(nicNode, _T("ConnectionType"), lookupResult->Code, 0);
+		}
+
+		else {
+			node_att_set(nicNode, _T("ConnectionType"), _T("Unknown"), NAFLG_ERROR);
+			SetError(ERR_WARN, 0, _T("Unknown Connection Type: %u"), pCurrent->IfType);
+		}
+
+		// DNS suffix
+		node_att_set(dnsNode, _T("DnsSuffix"), pCurrent->DnsSuffix, 0);
+
+		/****************************/
+		/* Windows Vista/2008 SP1 + */
+		/****************************/
+
+	next_adapter:
 
 		pCurrent = pCurrent->Next;
 	}
