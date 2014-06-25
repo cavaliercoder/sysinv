@@ -240,11 +240,11 @@ PNODE EnumErrorLog()
 	LPTSTR sysMsgBuffer = NULL;
 
 	if (NULL != errorLog) {
-		logNode = node_alloc(_T("Errors"), 0);
+		logNode = node_alloc(_T("Errors"), NFLG_TABLE);
 
 		for (cursor = &errorLog[0]; NULL != (*cursor); cursor++) {
 			error = (*cursor);
-			errorNode = node_append_new(logNode, _T("Error"), 0);
+			errorNode = node_append_new(logNode, _T("Error"), NFLG_TABLE_ROW);
 
 			// Source
 			node_att_set(errorNode, _T("FileName"), error->FileName, 0);
