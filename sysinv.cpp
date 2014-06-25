@@ -8,6 +8,7 @@
 #define OUT_XML		0x2
 #define OUT_JSON	0x3
 #define OUT_WALK	0x4
+#define OUT_YAML	0x5
 
 int HotFixTest();
 
@@ -17,7 +18,7 @@ int main(int argc, CHAR* argv[])
 {
 	FILE *out = stdout;
 	PNODE root, agent, software, hardware, configuration, storage, network, node;
-	DWORD format = OUT_LIST;
+	DWORD format = OUT_YAML;
 	DWORD i = 0;
 	PARGLIST argList = parse_args(argc, argv);
 	PARG arg;
@@ -65,8 +66,11 @@ int main(int argc, CHAR* argv[])
 			else if (0 == stricmp("walk", arg->val))
 				format = OUT_WALK;
 
-			else if(0 == stricmp("list", arg->val))
+			else if (0 == stricmp("tree", arg->val))
 				format = OUT_LIST;
+
+			else if (0 == stricmp("yaml", arg->val))
+				format = OUT_YAML;
 
 			else {
 				fprintf(stderr, "Unknown output type: '%s'\n", arg->val);
@@ -192,6 +196,10 @@ int main(int argc, CHAR* argv[])
 	case OUT_LIST:
 		node_to_list(root, out, 0);
 		break;
+
+	case OUT_YAML:
+		node_to_yaml(root, out, 0);
+		break;
 	}
 
 	fclose(out);
@@ -209,7 +217,8 @@ void print_usage(int ret)
 	printf("%s [/F:filename] [/O:format]\n\n", VER_ORIGINAL_FILENAME_STR);
 	printf("  /F          Write to file instead of printing to screen\n");
 	printf("  /O          Change output format\n");
-	printf("                LIST  Output data as snmp-walk style list\n");
+	printf("                YAML  Output data as YAML document\n");
+	printf("                TREE  Output data as tree list\n");
 	printf("                XML   Output data as XML tree\n");
 	printf("                JSON  Output data as Javascript object\n");
 	printf("                WALK  Output data as snmp-walk style list\n");

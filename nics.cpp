@@ -407,6 +407,7 @@ PNODE EnumNetworkInterfaces()
 	}
 
 	// Parse each adapter
+	// TODO: Prevent NIC enumeration from reading structure parts not available pre-Vista
 	while (NULL != pCurrent) {
 		nicNode = node_append_new(nicsNode, _T("Interface"), NFLG_TABLE_ROW);
 		linkNode = node_append_new(nicNode, _T("Link"), 0);

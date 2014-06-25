@@ -51,6 +51,10 @@
 #define NODE_JS_DELIM_INDENT	L"  "	// Tab token for JSON output
 #define NODE_JS_DELIM_SPACE		L" "	// Space used between keys and values
 
+// Macros for printing nodes to YAML
+#define NODE_YAML_DELIM_NL		L"\n"	// New line token for YAML output
+#define NODE_YAML_DELIM_INDENT	L"    "	// Tab toekn for YAML output
+
 // Function macros
 #define node_att_set_bool(node, key, value, flags)		node_att_set(node, key, (value ? _T("Yes") : _T("No")), flags | NAFLG_FMT_BOOLEAN)
 
@@ -94,6 +98,7 @@ PNODE_ATT node_att_set_multi(PNODE node, const LPCTSTR key, const LPCTSTR value,
 LPTSTR node_att_get(PNODE node, const LPCTSTR key);
 
 int node_to_list(PNODE node, FILE *file, int flags);
+int node_to_yaml(PNODE node, FILE *file, int flags);
 int node_to_xml(PNODE node, FILE *file, int flags);
 int node_to_json(PNODE node, FILE *file, int flags);
 int node_to_walk(PNODE node, FILE *file, int flags);

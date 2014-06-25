@@ -707,3 +707,56 @@ int node_to_json(PNODE node, FILE *file, int flags)
 	fwprintf(file, L"}%s", nl);
 	return nodes;
 }
+
+int node_to_yaml(PNODE node, FILE *file, int flags)
+{
+	int i = 0;
+	int count = 1;
+	int atts = node_att_count(node);
+	int children = node_child_count(node);
+	PNODE_ATT att = NULL;
+	PNODE child = NULL;
+	wchar_t * attVal = NULL;
+
+	if (NULL == node->Parent)
+		fwprintf(file, _T("---%s"), NODE_YAML_DELIM_NL);
+
+	fprintcx(file, NODE_YAML_DELIM_INDENT, indent_depth);
+
+	if (NFLG_TABLE_ROW & node->Flags)
+		fwprintf(file, _T("- "));
+
+	fwprintf(file, _T("%s:"), node->Name);
+
+	// Print attributes
+	if (0 < atts) {
+		fwprintf(file, NODE_YAML_DELIM_NL);
+		for (i = 0; i < atts; i++) {
+			att = node->Attributes[i].LinkedAttribute;
+			attVal = (NULL != att->Value && '\0' != *att->Value) ? att->Value : L"~";
+
+			fprintcx(file, NODE_YAML_DELIM_INDENT, indent_depth + 1);
+			if (NAFLG_FMT_GUID & att->Flags)
+				fwprintf(file, _T("%s: '%s'%s"), att->Key, attVal, NODE_YAML_DELIM_NL);
+			else
+				fwprintf(file, _T("%s: %s%s"), att->Key, attVal, NODE_YAML_DELIM_NL);
+		}
+	}
+
+	// Print children
+	if (0 < children) {
+		if (0 == atts)
+			fwprintf(file, NODE_YAML_DELIM_NL);
+		indent_depth++;
+		for (i = 0; i < children; i++) {
+			child = node->Children[i].LinkedNode;
+			node_to_yaml(child, file, 0);
+		}
+		indent_depth--;
+	}
+	else if(0 == atts) {
+		fwprintf(file, _T(" ~%s"), NODE_YAML_DELIM_NL);
+	}
+
+	return count;
+}
