@@ -36,10 +36,10 @@ PNODE GetSystemDetail()
 	GetComputerName(hostname, &bufferSize);
 	node_att_set(node, L"Hostname", hostname, NAFLG_KEY);
 
-	// Get time stamp (Universal full format eg. 2009-06-15 20:45:30Z)
+	// Get time stamp (Universal full format eg. 2009-06-15T20:45:30Z)
 	GetSystemTime(&systemTime);
 	if (cursor = GetDateFormat(LOCALE_SYSTEM_DEFAULT, 0, &systemTime, DATE_FORMAT, szSystemTime, MAX_PATH + 1)) {
-		szSystemTime[cursor - 1] = ' ';
+		szSystemTime[cursor - 1] = 'T';
 		if (GetTimeFormat(LOCALE_SYSTEM_DEFAULT, 0, &systemTime, TIME_FORMAT, &szSystemTime[cursor], MAX_PATH + 1)) {
 			node_att_set(node, _T("Timestamp"), szSystemTime, NAFLG_FMT_DATETIME);
 		}
