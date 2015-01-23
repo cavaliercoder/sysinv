@@ -9,6 +9,7 @@ PNODE_ATT node_alloc_att_multi(LPCTSTR key, LPCTSTR value, int flags);
 
 int indent_depth = 0;
 int xml_escape_content(LPCTSTR input, LPTSTR buffer, DWORD bufferSize);
+int json_escape_content(LPCTSTR input, LPTSTR buffer, DWORD bufferSize);
 
 PNODE node_alloc(LPCTSTR name, int flags)
 {
@@ -641,6 +642,45 @@ int xml_escape_content(LPCTSTR input, LPTSTR buffer, DWORD bufferSize)
 	return cOut - buffer;
 }
 
+int json_escape_content(LPCTSTR input, LPTSTR buffer, DWORD bufferSize)
+{
+	DWORD i = 0;
+	LPCTSTR cIn = input;
+	LPTSTR cOut = buffer;
+	DWORD newBufferSize = 0;
+
+	while ('\0' != (*cIn)) {
+		switch (*cIn) {
+		case '"':
+			memcpy(cOut, L"\\\"", sizeof(TCHAR) * 2);
+			cOut += 2;
+			break;
+
+		case '\\':
+			memcpy(cOut, L"\\\\", sizeof(TCHAR) * 2);
+			cOut += 2;
+			break;
+
+		case '\r':
+			break;
+
+		case '\n':
+			memcpy(cOut, L"\\n", sizeof(TCHAR) * 2);
+			cOut += 2;
+			break;
+
+		default:
+			memcpy(cOut, cIn, sizeof(TCHAR));
+			cOut += 1;
+			break;
+		}
+
+		cIn++;
+	}
+	*cOut = '\0';
+
+	return cOut - buffer;
+}
 int node_to_json(PNODE node, FILE *file, int flags)
 {
 	int i = 0;
@@ -650,14 +690,10 @@ int node_to_json(PNODE node, FILE *file, int flags)
 	int indent = (0 == (flags & NODE_JS_FLAG_NOWS)) ? indent_depth : 0;
 	LPTSTR nl = flags & NODE_JS_FLAG_NOWS ? L"" : NODE_JS_DELIM_NL;
 	LPTSTR space = flags & NODE_JS_FLAG_NOWS ? L"" : NODE_JS_DELIM_SPACE;
-
-	//if (indent_depth == 0) {
-	//	fwprintf(file, L"{\n");
-	//}
+	TCHAR strBuffer[NODE_BUFFER_LEN];
 
 	// Print header
 	fprintcx(file, NODE_JS_DELIM_INDENT, indent);
-
 	if (0 < indent_depth && 0 == (node->Flags & NFLG_TABLE_ROW))
 		fwprintf(file, L"\"%s\":%s", node->Name, space);
 
@@ -667,19 +703,24 @@ int node_to_json(PNODE node, FILE *file, int flags)
 		fwprintf(file, L"[");
 
 	// Print attributes
-	if(0 < atts) {
+	if(0 < atts && 0 == (node->Flags & NFLG_TABLE)) {
 		for(i = 0; i < atts; i++) {
 			if (i > 0)
 				fwprintf(file, L",");
 
+			// Print attribute name
 			fwprintf(file, L"%s", NODE_JS_DELIM_NL);
 			fprintcx(file, NODE_JS_DELIM_INDENT, indent + 1);
-			fwprintf(file, L"\"%s\":%s\"%s\"", 
-				node->Attributes[i].LinkedAttribute->Key,
-				space,
-				node->Attributes[i].LinkedAttribute->Value,
-				nl);
+			fwprintf(file, L"\"%s\":%s", node->Attributes[i].LinkedAttribute->Key, space);
 
+			// Print value
+			if (node->Attributes[i].LinkedAttribute->Flags & NAFLG_FMT_NUMERIC)
+				fwprintf(file, node->Attributes[i].LinkedAttribute->Value);
+
+			else {
+				json_escape_content(node->Attributes[i].LinkedAttribute->Value, strBuffer, NODE_BUFFER_LEN);
+				fwprintf(file, L"\"%s\"", strBuffer);
+			}
 		}
 	}
 
@@ -687,37 +728,22 @@ int node_to_json(PNODE node, FILE *file, int flags)
 	if(0 < children) {
 		indent_depth++;
 		for(i = 0; i < children; i++) {
-			if (i > 0 || atts > 0)
+			if (i > 0 || (atts > 0 && (0 == (node->Flags & NFLG_TABLE))))
 				fwprintf(file, L",");
 
-			fwprintf(file, L"%s", NODE_JS_DELIM_NL);
+			fwprintf(file, NODE_JS_DELIM_NL);
 			nodes += node_to_json(node->Children[i].LinkedNode, file, flags);
 
-			if(i < children - 1) {
-				//fprintcx(file, NODE_JS_DELIM_INDENT, indent + 3);
-				//fwprintf(file, L",%s", nl);
-			}
 		}
 		indent_depth--;
-		
-		//fprintcx(file, NODE_JS_DELIM_INDENT, indent + 2);
-		//fwprintf(file, L"}%s", nl);
-		//fwprintf(file, L"]%s", nl);
 	}
 
 	fwprintf(file, NODE_JS_DELIM_NL);
 	fprintcx(file, NODE_JS_DELIM_INDENT, indent);
-
-
 	if (0 == (node->Flags & NFLG_TABLE))
 		fwprintf(file, L"}");
 	else
 		fwprintf(file, L"]");
-
-	// Print footer
-	//if (indent_depth == 0) {
-	//	fwprintf(file, L"\n}\n");
-	//}
 
 	return nodes;
 }

@@ -204,7 +204,7 @@ PNODE GetDiskDetail(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 		node_att_set(node, L"Size", strBuffer, NAFLG_FMT_BYTES);
 
 		f = (diskGeometry->DiskSize.QuadPart / 1073741824);
-		swprintf(strBuffer, L"%.0fGB", f);
+		swprintf(strBuffer, L"%.0f", f);
 		node_att_set(node, L"SizeGb", strBuffer, NAFLG_FMT_GBYTES);
 
 		geoNode = node_append_new(node, L"Geometry", NFLG_ATTGROUP);
@@ -273,7 +273,7 @@ PNODE GetDiskDetail(__in PNODE parent, HDEVINFO hDevInfo, DWORD index)
 				node_att_set(partNode, L"Length", strBuffer, NAFLG_FMT_NUMERIC);
 
 				f = (diskLayout->PartitionEntry[i].PartitionLength.QuadPart / 1073741824);
-				swprintf(strBuffer, L"%.0fGB", f);
+				swprintf(strBuffer, L"%.0f", f);
 				node_att_set(partNode, L"LengthGb", strBuffer, NAFLG_FMT_GBYTES);
 			}
 		}

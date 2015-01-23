@@ -395,7 +395,7 @@ PNODE EnumProcessors()
 	char buffer[BUFLEN];
 	TCHAR strBuffer[BUFLEN];
 	LPTSTR unicode = NULL;
-	PNODE cpuNode = node_alloc(L"Processors", NFLG_TABLE);
+	PNODE cpuNode = node_alloc(L"Processor", 0);
 	PNODE featuresNode = node_append_new(cpuNode, _T("Features"), NFLG_TABLE);
 	PNODE node = NULL;
 
