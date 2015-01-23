@@ -651,60 +651,74 @@ int node_to_json(PNODE node, FILE *file, int flags)
 	LPTSTR nl = flags & NODE_JS_FLAG_NOWS ? L"" : NODE_JS_DELIM_NL;
 	LPTSTR space = flags & NODE_JS_FLAG_NOWS ? L"" : NODE_JS_DELIM_SPACE;
 
+	//if (indent_depth == 0) {
+	//	fwprintf(file, L"{\n");
+	//}
+
 	// Print header
 	fprintcx(file, NODE_JS_DELIM_INDENT, indent);
-	fwprintf(file, L"{%s", nl);
-	fprintcx(file, NODE_JS_DELIM_INDENT, indent + 1);
-	fwprintf(file, L"\"%s\":%s", node->Name, space);
+
+	if (0 < indent_depth && 0 == (node->Flags & NFLG_TABLE_ROW))
+		fwprintf(file, L"\"%s\":%s", node->Name, space);
+
+	if (0 == (node->Flags & NFLG_TABLE))
+		fwprintf(file, L"{");
+	else
+		fwprintf(file, L"[");
 
 	// Print attributes
 	if(0 < atts) {
-		fwprintf(file, L"{");
-		fprintcx(file, NODE_JS_DELIM_INDENT, indent + 1);
-		fwprintf(file, nl);
 		for(i = 0; i < atts; i++) {
-			fprintcx(file, NODE_JS_DELIM_INDENT, indent + 2);
+			if (i > 0)
+				fwprintf(file, L",");
+
+			fwprintf(file, L"%s", NODE_JS_DELIM_NL);
+			fprintcx(file, NODE_JS_DELIM_INDENT, indent + 1);
 			fwprintf(file, L"\"%s\":%s\"%s\"", 
 				node->Attributes[i].LinkedAttribute->Key,
 				space,
 				node->Attributes[i].LinkedAttribute->Value,
 				nl);
 
-			if(i == atts - 1 && 0 == children)
-				fwprintf(file, nl);
-			else
-				fwprintf(file, L",%s", nl);
 		}
 	}
 
 	// Print children
 	if(0 < children) {
-		fprintcx(file, NODE_JS_DELIM_INDENT, indent + 2);
-		if(0 < atts)
-			fwprintf(file, L"\"children\":%s", space);
-		fwprintf(file, L"[%s", nl);
-		
-		indent_depth+=3;
+		indent_depth++;
 		for(i = 0; i < children; i++) {
+			if (i > 0 || atts > 0)
+				fwprintf(file, L",");
+
+			fwprintf(file, L"%s", NODE_JS_DELIM_NL);
 			nodes += node_to_json(node->Children[i].LinkedNode, file, flags);
 
 			if(i < children - 1) {
-				fprintcx(file, NODE_JS_DELIM_INDENT, indent + 3);
-				fwprintf(file, L",%s", nl);
+				//fprintcx(file, NODE_JS_DELIM_INDENT, indent + 3);
+				//fwprintf(file, L",%s", nl);
 			}
 		}
-		indent_depth-=3;
+		indent_depth--;
 		
-		fprintcx(file, NODE_JS_DELIM_INDENT, indent + 2);
-		fwprintf(file, L"]%s", nl);
+		//fprintcx(file, NODE_JS_DELIM_INDENT, indent + 2);
+		//fwprintf(file, L"}%s", nl);
+		//fwprintf(file, L"]%s", nl);
 	}
 
-	fprintcx(file, NODE_JS_DELIM_INDENT, indent + 1);
-	fwprintf(file, L"}%s", nl);
+	fwprintf(file, NODE_JS_DELIM_NL);
+	fprintcx(file, NODE_JS_DELIM_INDENT, indent);
+
+
+	if (0 == (node->Flags & NFLG_TABLE))
+		fwprintf(file, L"}");
+	else
+		fwprintf(file, L"]");
 
 	// Print footer
-	fprintcx(file, NODE_JS_DELIM_INDENT, indent);
-	fwprintf(file, L"}%s", nl);
+	//if (indent_depth == 0) {
+	//	fwprintf(file, L"\n}\n");
+	//}
+
 	return nodes;
 }
 
