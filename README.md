@@ -1,7 +1,7 @@
 ## ![SysInv Logo](SysInv-Icon-32x32.png) SysInv
 
 ## !!! DEPRECATED !!!
-This project is deprecated and being rewrittens as [si](https://github.com/cavaliercoder/si).
+This project is deprecated and being rewritten as [si](https://github.com/cavaliercoder/si).
 
 ### Synopsis
 
