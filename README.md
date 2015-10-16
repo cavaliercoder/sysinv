@@ -1,5 +1,8 @@
 ## ![SysInv Logo](SysInv-Icon-32x32.png) SysInv
 
+## !!! DEPRECATED !!!
+This project is deprecated and being rewrittens as [si](https://github.com/cavaliercoder/si).
+
 ### Synopsis
 
 SysInv is a native Windows command line app written in C++ which enumerates hardware and software resources on a local system.
